@@ -12,13 +12,16 @@ import {
   HttpStatus,
   ParseIntPipe,
   DefaultValuePipe,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiParam } from '@nestjs/swagger';
 import { UserService } from './user.service';
 import { CreateUserDto, UpdateUserDto, GetUsersQueryDto, UserEntity } from './dto';
 import { User } from 'generated/prisma';
+import { JwtAuthGuard } from 'src/auth/guards/jwt.auth.guard';
 
 @ApiTags('users')
+@UseGuards(JwtAuthGuard)
 @Controller('users')
 export class UserController {
   constructor(private readonly userService: UserService) {}
