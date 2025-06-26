@@ -1,0 +1,30 @@
+# Dockerfile.api (for NestJS app)
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install pnpm
+RUN npm install -g pnpm
+
+# Copy root package files first for better caching
+COPY package*.json ./
+COPY pnpm-lock.yaml ./
+COPY pnpm-workspace.yaml ./
+COPY turbo.json ./
+
+# Copy all package.json files for workspace resolution
+COPY apps/web/package*.json ./apps/web/
+COPY apps/api/package*.json ./apps/api/
+COPY packages ./packages
+
+# Install dependencies
+RUN pnpm install --frozen-lockfile
+
+# Copy source code
+COPY apps/api ./apps/api
+
+# Expose port
+EXPOSE 3001
+
+# Start in development mode
+CMD ["pnpm", "dev", "--filter=api"]

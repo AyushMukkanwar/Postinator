@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile.web
+    ports:
+      - "3000:3000"
+    volumes:
+      # Mount source code for hot reloading
+      - ./apps/web:/app/apps/web
+      - ./packages:/app/packages
+      - ./turbo.json:/app/turbo.json
+      - ./package.json:/app/package.json
+      - ./package-lock.json:/app/package-lock.json
+      # Prevent node_modules from being overwritten
+      - /app/node_modules
+      - /app/apps/web/node_modules
+    environment:
+      - NODE_ENV=development
+    command: sh -c "pnpm install && pnpm dev --filter=web"
+    stdin_open: true
+    tty: true
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile.api
+    ports:
+      - "3001:3001"
+    volumes:
+      # Mount source code for hot reloading
+      - ./apps/api:/app/apps/api
+      - ./packages:/app/packages
+      - ./turbo.json:/app/turbo.json
+      - ./package.json:/app/package.json
+      - ./package-lock.json:/app/package-lock.json
+      # Prevent node_modules from being overwritten
+      - /app/node_modules
+      - /app/apps/web/node_modules
+    environment:
+      - NODE_ENV=development
+    command: sh -c "pnpm install && pnpm dev --filter=api"
+    stdin_open: true
+    tty: true
