@@ -1,9 +1,9 @@
 // apps/web/src/lib/hooks/useAxiosAuth.ts
-"use client";
+'use client';
 
-import { useEffect } from "react";
-import { axiosAuth } from "../axios";
-import { getSupabaseFrontendClient } from "../supabase/client"; // Path to your client.ts
+import { useEffect } from 'react';
+import { axiosAuth } from '../axios';
+import { getSupabaseFrontendClient } from '../supabase/client'; // Path to your client.ts
 
 const useAxiosAuth = () => {
   const supabase = getSupabaseFrontendClient();
@@ -14,9 +14,9 @@ const useAxiosAuth = () => {
         const { data: sessionData } = await supabase.auth.getSession(); // Renamed for clarity
         let accessToken = sessionData?.session?.access_token;
 
-        if (accessToken && !config.headers["Authorization"]) {
+        if (accessToken && !config.headers['Authorization']) {
           // Check if accessToken exists
-          config.headers["Authorization"] = `Bearer ${accessToken}`;
+          config.headers['Authorization'] = `Bearer ${accessToken}`;
         }
         return config;
       },

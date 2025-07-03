@@ -25,7 +25,7 @@ async function bootstrap() {
     new ValidationPipe({
       whitelist: true, // Automatically remove non-whitelisted properties
       transform: true, // Automatically transform payloads to DTO instances
-    }),
+    })
   );
 
   const config = new DocumentBuilder()

@@ -4,16 +4,25 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { Post, Prisma, PostStatus, Platform } from 'generated/prisma';
 import { BaseRepository } from './base.repository';
 
-export interface IPostRepository extends BaseRepository<
-  Post,
-  Prisma.PostCreateInput,
-  Prisma.PostUpdateInput,
-  Prisma.PostWhereInput
-> {
+export interface IPostRepository
+  extends BaseRepository<
+    Post,
+    Prisma.PostCreateInput,
+    Prisma.PostUpdateInput,
+    Prisma.PostWhereInput
+  > {
   findScheduledPosts(beforeDate?: Date): Promise<Post[]>;
   findByUserAndStatus(userId: string, status: PostStatus): Promise<Post[]>;
-  findByPlatformAndStatus(platform: Platform, status: PostStatus): Promise<Post[]>;
-  updateStatus(id: string, status: PostStatus, platformPostId?: string, errorMessage?: string): Promise<Post>;
+  findByPlatformAndStatus(
+    platform: Platform,
+    status: PostStatus
+  ): Promise<Post[]>;
+  updateStatus(
+    id: string,
+    status: PostStatus,
+    platformPostId?: string,
+    errorMessage?: string
+  ): Promise<Post>;
   markAsPublished(id: string, platformPostId: string): Promise<Post>;
   markAsFailed(id: string, errorMessage: string): Promise<Post>;
   findPendingForSocialAccount(socialAccountId: string): Promise<Post[]>;
@@ -24,7 +33,7 @@ export class PostRepository implements IPostRepository {
   constructor(private prisma: PrismaService) {}
 
   async create(data: Prisma.PostCreateInput): Promise<Post> {
-    return this.prisma.post.create({ 
+    return this.prisma.post.create({
       data,
       include: {
         user: true,
@@ -62,7 +71,10 @@ export class PostRepository implements IPostRepository {
     });
   }
 
-  async findByUserAndStatus(userId: string, status: PostStatus): Promise<Post[]> {
+  async findByUserAndStatus(
+    userId: string,
+    status: PostStatus
+  ): Promise<Post[]> {
     return this.prisma.post.findMany({
       where: {
         userId,
@@ -75,7 +87,10 @@ export class PostRepository implements IPostRepository {
     });
   }
 
-  async findByPlatformAndStatus(platform: Platform, status: PostStatus): Promise<Post[]> {
+  async findByPlatformAndStatus(
+    platform: Platform,
+    status: PostStatus
+  ): Promise<Post[]> {
     return this.prisma.post.findMany({
       where: {
         platform,

@@ -6,7 +6,7 @@ services:
       context: .
       dockerfile: apps/web/Dockerfile.web
     ports:
-      - "3000:3000"
+      - '3000:3000'
     volumes:
       # Mount source code for hot reloading
       - ./apps/web:/app/apps/web
@@ -28,7 +28,7 @@ services:
       context: .
       dockerfile: apps/api/Dockerfile.api
     ports:
-      - "3001:3001"
+      - '3001:3001'
     volumes:
       # Mount source code for hot reloading
       - ./apps/api:/app/apps/api

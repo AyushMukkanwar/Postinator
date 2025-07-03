@@ -6,7 +6,7 @@ export const createMockTestingModule = async (
   additionalProviders: any[] = []
 ): Promise<TestingModule> => {
   const { Test } = await import('@nestjs/testing');
-  
+
   return Test.createTestingModule({
     providers: [
       ...providers,

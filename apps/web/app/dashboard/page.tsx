@@ -1,25 +1,25 @@
-"use client";
+'use client';
 
-import type { FormEvent } from "react";
-import type { User } from "@supabase/supabase-js";
+import type { FormEvent } from 'react';
+import type { User } from '@supabase/supabase-js';
 
-import useAxiosAuth from "../../lib/hooks/useAxiosAuth";
-import { getSupabaseFrontendClient } from "../../lib/supabase/client";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import useAxiosAuth from '../../lib/hooks/useAxiosAuth';
+import { getSupabaseFrontendClient } from '../../lib/supabase/client';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
+} from '@/components/ui/card';
+import { Textarea } from '@/components/ui/textarea';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 import {
   LogOut,
   Plus,
@@ -29,7 +29,7 @@ import {
   UserIcon,
   TestTube,
   Calendar,
-} from "lucide-react";
+} from 'lucide-react';
 
 // Define a type for our notes
 interface Note {
@@ -46,7 +46,7 @@ export default function DashboardPage() {
   const axiosAuth = useAxiosAuth();
 
   const [notes, setNotes] = useState<Note[]>([]);
-  const [newNoteContent, setNewNoteContent] = useState("");
+  const [newNoteContent, setNewNoteContent] = useState('');
   const [isLoadingNotes, setIsLoadingNotes] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -56,12 +56,12 @@ export default function DashboardPage() {
     setIsLoadingNotes(true);
     setError(null);
     try {
-      const response = await axiosAuth.get<Note[]>("/notes");
+      const response = await axiosAuth.get<Note[]>('/notes');
       setNotes(response.data);
     } catch (err: any) {
-      console.error("Error fetching notes:", err);
+      console.error('Error fetching notes:', err);
       setError(
-        "Failed to fetch notes. " + (err.response?.data?.message || err.message)
+        'Failed to fetch notes. ' + (err.response?.data?.message || err.message)
       );
     } finally {
       setIsLoadingNotes(false);
@@ -72,20 +72,20 @@ export default function DashboardPage() {
   const handleCreateNote = async (e: FormEvent) => {
     e.preventDefault();
     if (!newNoteContent.trim()) {
-      setError("Note content cannot be empty.");
+      setError('Note content cannot be empty.');
       return;
     }
     setError(null);
     try {
-      const response = await axiosAuth.post<Note>("/notes", {
+      const response = await axiosAuth.post<Note>('/notes', {
         content: newNoteContent,
       });
       setNotes((prevNotes) => [response.data, ...prevNotes]); // Add new note to the top
-      setNewNoteContent(""); // Clear input
+      setNewNoteContent(''); // Clear input
     } catch (err: any) {
-      console.error("Error creating note:", err);
+      console.error('Error creating note:', err);
       setError(
-        "Failed to create note. " + (err.response?.data?.message || err.message)
+        'Failed to create note. ' + (err.response?.data?.message || err.message)
       );
     }
   };
@@ -93,14 +93,14 @@ export default function DashboardPage() {
   // Original function to fetch generic protected data (can be kept for testing)
   const getProtectedData = async () => {
     try {
-      const response = await axiosAuth.get("/protected"); // Uses the hook instance
-      console.log("Protected data:", response.data);
+      const response = await axiosAuth.get('/protected'); // Uses the hook instance
+      console.log('Protected data:', response.data);
       alert(
-        "Generic Protected Data:\n" + JSON.stringify(response.data, null, 2)
+        'Generic Protected Data:\n' + JSON.stringify(response.data, null, 2)
       );
     } catch (err) {
-      console.error("Error fetching protected data:", err);
-      alert("Failed to fetch generic protected data. Check console.");
+      console.error('Error fetching protected data:', err);
+      alert('Failed to fetch generic protected data. Check console.');
     }
   };
 
@@ -108,7 +108,7 @@ export default function DashboardPage() {
     const checkSession = async () => {
       const { data } = await supabase.auth.getSession();
       if (!data.session) {
-        router.push("/login");
+        router.push('/login');
       } else {
         setUser(data.session.user);
       }
@@ -127,7 +127,7 @@ export default function DashboardPage() {
   const logout = async () => {
     await supabase.auth.signOut();
     setUser(null);
-    router.push("/login");
+    router.push('/login');
   };
 
   if (!user) {
@@ -137,7 +137,7 @@ export default function DashboardPage() {
           <CardContent className="flex flex-col items-center justify-center p-6">
             <Loader2 className="h-8 w-8 animate-spin text-slate-600 mb-4" />
             <p className="text-slate-600 text-center">
-              Loading session... If this takes too long,{" "}
+              Loading session... If this takes too long,{' '}
               <Link
                 href="/login"
                 className="text-blue-600 hover:text-blue-500 font-medium"

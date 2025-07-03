@@ -1,15 +1,15 @@
-"use client";
+'use client';
 
-import type React from "react";
+import type React from 'react';
 
-import { useState } from "react";
-import { signInWithEmailAndPassword } from "../../auth/actions";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { getSupabaseFrontendClient } from "../../../lib/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { useState } from 'react';
+import { signInWithEmailAndPassword } from '../actions';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { getSupabaseFrontendClient } from '../../../lib/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Card,
   CardContent,
@@ -17,51 +17,51 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Separator } from "@/components/ui/separator";
-import { Mail, Lock, AlertCircle } from "lucide-react";
+} from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Separator } from '@/components/ui/separator';
+import { Mail, Lock, AlertCircle } from 'lucide-react';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const router = useRouter();
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
   const supabase = getSupabaseFrontendClient();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
+    setError('');
     const { data, error: signInError } = await signInWithEmailAndPassword({
       email,
       password,
     }); // Renamed error to avoid conflict
 
     if (signInError) {
-      console.error("Error logging in:", signInError);
+      console.error('Error logging in:', signInError);
       setError(`Login failed: ${signInError.message}`);
     } else {
-      console.log("Logged in successfully:", data);
-      router.push("/dashboard");
+      console.log('Logged in successfully:', data);
+      router.push('/dashboard');
     }
   };
 
   const handleGoogleSignIn = async () => {
-    setError("");
+    setError('');
     try {
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
-        provider: "google",
+        provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
         },
       });
 
       if (oauthError) {
-        console.error("Google Sign-In Error:", oauthError);
+        console.error('Google Sign-In Error:', oauthError);
         setError(`Google Sign-In failed: ${oauthError.message}`);
       }
     } catch (catchedError: any) {
-      console.error("Unexpected Google Sign-In Error:", catchedError);
+      console.error('Unexpected Google Sign-In Error:', catchedError);
       setError(`An unexpected error occurred: ${catchedError.message}`);
     }
   };
@@ -169,7 +169,7 @@ export default function LoginPage() {
 
         <CardFooter className="flex flex-col space-y-4">
           <div className="text-center text-sm text-slate-600">
-            Don't have an account?{" "}
+            Don't have an account?{' '}
             <Link
               href="/register"
               className="font-medium text-blue-600 hover:text-blue-500 transition-colors"

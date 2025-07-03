@@ -4,16 +4,28 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { SocialAccount, Prisma, Platform } from 'generated/prisma';
 import { BaseRepository } from './base.repository';
 
-export interface ISocialAccountRepository extends BaseRepository<
-  SocialAccount,
-  Prisma.SocialAccountCreateInput,
-  Prisma.SocialAccountUpdateInput,
-  Prisma.SocialAccountWhereInput
-> {
-  findByUserAndPlatform(userId: string, platform: Platform): Promise<SocialAccount | null>;
+export interface ISocialAccountRepository
+  extends BaseRepository<
+    SocialAccount,
+    Prisma.SocialAccountCreateInput,
+    Prisma.SocialAccountUpdateInput,
+    Prisma.SocialAccountWhereInput
+  > {
+  findByUserAndPlatform(
+    userId: string,
+    platform: Platform
+  ): Promise<SocialAccount | null>;
   findActiveByUser(userId: string): Promise<SocialAccount[]>;
-  findByPlatformId(platformId: string, platform: Platform): Promise<SocialAccount | null>;
-  updateTokens(id: string, accessToken: string, refreshToken?: string, expiresAt?: Date): Promise<SocialAccount>;
+  findByPlatformId(
+    platformId: string,
+    platform: Platform
+  ): Promise<SocialAccount | null>;
+  updateTokens(
+    id: string,
+    accessToken: string,
+    refreshToken?: string,
+    expiresAt?: Date
+  ): Promise<SocialAccount>;
   deactivateAccount(id: string): Promise<SocialAccount>;
 }
 
@@ -34,7 +46,10 @@ export class SocialAccountRepository implements ISocialAccountRepository {
     });
   }
 
-  async findByUserAndPlatform(userId: string, platform: Platform): Promise<SocialAccount | null> {
+  async findByUserAndPlatform(
+    userId: string,
+    platform: Platform
+  ): Promise<SocialAccount | null> {
     return this.prisma.socialAccount.findUnique({
       where: {
         userId_platform: {
@@ -55,7 +70,10 @@ export class SocialAccountRepository implements ISocialAccountRepository {
     });
   }
 
-  async findByPlatformId(platformId: string, platform: Platform): Promise<SocialAccount | null> {
+  async findByPlatformId(
+    platformId: string,
+    platform: Platform
+  ): Promise<SocialAccount | null> {
     return this.prisma.socialAccount.findFirst({
       where: {
         platformId,
@@ -102,7 +120,10 @@ export class SocialAccountRepository implements ISocialAccountRepository {
     });
   }
 
-  async update(id: string, data: Prisma.SocialAccountUpdateInput): Promise<SocialAccount> {
+  async update(
+    id: string,
+    data: Prisma.SocialAccountUpdateInput
+  ): Promise<SocialAccount> {
     return this.prisma.socialAccount.update({
       where: { id },
       data,
