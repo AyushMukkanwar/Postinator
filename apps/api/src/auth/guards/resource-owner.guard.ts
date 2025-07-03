@@ -5,14 +5,21 @@ import {
   ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
+import { Request } from 'express';
 import { UserService } from 'src/user/user.service';
+
+interface AuthenticatedRequest extends Request {
+  user?: {
+    email: string;
+  };
+}
 
 @Injectable()
 export class ResourceOwnerGuard implements CanActivate {
   constructor(private userService: UserService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest();
+    const request: AuthenticatedRequest = context.switchToHttp().getRequest();
     const resourceId = request.params.id; // The user ID from the URL
     const currentUser = request.user; // Set by your JWT auth guard (contains JWT payload)
 

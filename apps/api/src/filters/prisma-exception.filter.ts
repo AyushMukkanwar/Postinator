@@ -2,18 +2,28 @@ import {
   ArgumentsHost,
   Catch,
   ExceptionFilter,
+  HttpException,
   HttpStatus,
 } from '@nestjs/common';
 import { Response } from 'express';
 
-@Catch() // Catch all exceptions for debugging
+interface PrismaError {
+  code?: string;
+}
+
+interface ErrorResponse {
+  message: string;
+}
+
+@Catch()
 export class PrismaExceptionFilter implements ExceptionFilter {
-  catch(exception: any, host: ArgumentsHost) {
+  catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
 
-    // Check if it's a Prisma error
-    if (exception.code === 'P2002') {
+    const prismaError = exception as PrismaError;
+
+    if (prismaError.code === 'P2002') {
       return response.status(HttpStatus.CONFLICT).json({
         statusCode: HttpStatus.CONFLICT,
         message: 'Duplicate record',
@@ -21,7 +31,7 @@ export class PrismaExceptionFilter implements ExceptionFilter {
       });
     }
 
-    if (exception.code === 'P2025') {
+    if (prismaError.code === 'P2025') {
       return response.status(HttpStatus.NOT_FOUND).json({
         statusCode: HttpStatus.NOT_FOUND,
         message: 'Record not found',
@@ -29,17 +39,21 @@ export class PrismaExceptionFilter implements ExceptionFilter {
       });
     }
 
-    // Handle NestJS built-in exceptions (NotFoundException, UnauthorizedException, etc.)
-    if (exception.getStatus && typeof exception.getStatus === 'function') {
+    if (exception instanceof HttpException) {
       const status = exception.getStatus();
+      const errorResponse = exception.getResponse() as ErrorResponse | string;
+      const message =
+        typeof errorResponse === 'string'
+          ? errorResponse
+          : errorResponse.message;
+
       return response.status(status).json({
         statusCode: status,
-        message: exception.message,
+        message: message,
         error: exception.constructor.name.replace('Exception', ''),
       });
     }
 
-    // Default to 500
     return response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
       message: 'Internal server error',
@@ -47,6 +61,3 @@ export class PrismaExceptionFilter implements ExceptionFilter {
     });
   }
 }
-
-// Register in main.ts:
-// app.useGlobalFilters(new PrismaExceptionFilter());

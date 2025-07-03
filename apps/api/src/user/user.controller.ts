@@ -1,4 +1,3 @@
-// src/modules/user/user.controller.ts
 import {
   Controller,
   Get,
@@ -21,6 +20,7 @@ import {
   ApiQuery,
   ApiParam,
 } from '@nestjs/swagger';
+import { Prisma } from '../../generated/prisma';
 import { UserService } from './user.service';
 import {
   CreateUserDto,
@@ -94,7 +94,12 @@ export class UserController {
   async getUsers(@Query() query: GetUsersQueryDto): Promise<User[]> {
     const { skip, take, search, sortBy, sortOrder } = query;
 
-    const params: any = {};
+    const params: {
+      skip?: number;
+      take?: number;
+      where?: Prisma.UserWhereInput;
+      orderBy?: Prisma.UserOrderByWithRelationInput;
+    } = {};
 
     if (skip !== undefined) params.skip = skip;
     if (take !== undefined) params.take = take;
@@ -131,7 +136,7 @@ export class UserController {
   async getUserCount(
     @Query('search') search?: string
   ): Promise<{ count: number }> {
-    let where;
+    let where: Prisma.UserWhereInput | undefined;
     if (search) {
       where = {
         OR: [
@@ -233,7 +238,6 @@ export class UserController {
   @Delete(':id')
   @UseGuards(ResourceOwnerGuard)
   @Throttle({ strict: { limit: 3, ttl: 60000 } })
-  @UseGuards(ResourceOwnerGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Delete user by ID' })
   @ApiResponse({
