@@ -5,5 +5,15 @@
   "testRegex": ".e2e-spec.ts$",
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
+  },
+  "collectCoverageFrom": [
+    "src/**/*.(t|j)s"
+  ],
+  "coverageDirectory": "../coverage",
+  "testTimeout": 90000,
+  "maxWorkers": 1,
+  "moduleNameMapper": {
+    "^src/(.*)$": "<rootDir>/../src/$1",
+    "^generated/prisma$": "<rootDir>/../generated/prisma"
   }
 }

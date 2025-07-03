@@ -16,13 +16,13 @@ import { SupabaseStrategy } from './strategies/supabase.strategy';
         return {
           // global: true, // Setting global here makes this JWT module instance global
           secret: configService.get<string>('JWT_SECRET'),
-          signOptions: { expiresIn: '40000s' }, // Original was 40000 (number)
+          signOptions: { expiresIn: '40000s' },
         };
       },
       inject: [ConfigService],
     }),
   ],
-  providers: [SupabaseStrategy, JwtAuthGuard], // Swapped order for convention, strategy first
+  providers: [SupabaseStrategy, JwtAuthGuard],
   exports: [JwtAuthGuard, JwtModule], // Export SupabaseStrategy if needed elsewhere
 })
 export class AuthModule {}

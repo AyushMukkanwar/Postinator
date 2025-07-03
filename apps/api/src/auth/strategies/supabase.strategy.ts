@@ -19,13 +19,4 @@ export class SupabaseStrategy extends PassportStrategy(Strategy) {
     // For example, check if user exists in your DB, or if the token is revoked
     return payload;
   }
-
-  // The authenticate method is part of the base PassportStrategy and usually doesn't need overriding
-  // unless you have very specific custom logic for the authentication process itself.
-  // The article includes `super.authenticate(req)`, which just calls the parent's authenticate.
-  // If you don't have custom logic before or after calling super.authenticate, this override is often not needed.
-  // For simplicity and adherence to the article:
-  // authenticate(req) {
-  //   super.authenticate(req);
-  // }
 }
