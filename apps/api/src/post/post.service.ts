@@ -1,14 +1,18 @@
 // src/modules/post/post.service.ts
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PostRepository } from 'src/database/repositories/post.repository';
 import { SocialAccountRepository } from 'src/database/repositories/social-account.repository';
-import { Post, Prisma, PostStatus, Platform } from 'generated/prisma';
+import { Post, PostStatus, Platform } from 'generated/prisma';
 
 @Injectable()
 export class PostService {
   constructor(
     private postRepository: PostRepository,
-    private socialAccountRepository: SocialAccountRepository,
+    private socialAccountRepository: SocialAccountRepository
   ) {}
 
   async schedulePost(data: {
@@ -19,8 +23,14 @@ export class PostService {
     platform: Platform;
   }): Promise<Post> {
     // Validate social account belongs to user and is active
-    const socialAccount = await this.socialAccountRepository.findById(data.socialAccountId);
-    if (!socialAccount || socialAccount.userId !== data.userId || !socialAccount.isActive) {
+    const socialAccount = await this.socialAccountRepository.findById(
+      data.socialAccountId
+    );
+    if (
+      !socialAccount ||
+      socialAccount.userId !== data.userId ||
+      !socialAccount.isActive
+    ) {
       throw new BadRequestException('Invalid or inactive social account');
     }
 
@@ -55,9 +65,14 @@ export class PostService {
     id: string,
     status: PostStatus,
     platformPostId?: string,
-    errorMessage?: string,
+    errorMessage?: string
   ): Promise<Post> {
-    return this.postRepository.updateStatus(id, status, platformPostId, errorMessage);
+    return this.postRepository.updateStatus(
+      id,
+      status,
+      platformPostId,
+      errorMessage
+    );
   }
 
   async markPostAsPublished(id: string, platformPostId: string): Promise<Post> {
@@ -85,7 +100,11 @@ export class PostService {
     return this.postRepository.updateStatus(id, PostStatus.CANCELLED);
   }
 
-  async reschedulePost(id: string, userId: string, newScheduledTime: Date): Promise<Post> {
+  async reschedulePost(
+    id: string,
+    userId: string,
+    newScheduledTime: Date
+  ): Promise<Post> {
     const post = await this.postRepository.findById(id);
     if (!post) {
       throw new NotFoundException(`Post with ID ${id} not found`);

@@ -1,10 +1,14 @@
-import { ArgumentsHost, Catch, ExceptionFilter, HttpStatus } from '@nestjs/common';
+import {
+  ArgumentsHost,
+  Catch,
+  ExceptionFilter,
+  HttpStatus,
+} from '@nestjs/common';
 import { Response } from 'express';
 
 @Catch() // Catch all exceptions for debugging
 export class PrismaExceptionFilter implements ExceptionFilter {
   catch(exception: any, host: ArgumentsHost) {
-
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
 

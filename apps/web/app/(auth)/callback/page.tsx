@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { getSupabaseFrontendClient } from "../../../lib/supabase/client";
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { getSupabaseFrontendClient } from '../../../lib/supabase/client';
 
 export default function AuthCallbackPage() {
   const router = useRouter();
@@ -14,24 +14,24 @@ export default function AuthCallbackPage() {
         const { data, error } = await supabase.auth.getSession();
 
         if (error) {
-          console.error("Auth callback error:", error);
-          router.push("/login?error=auth_callback_error");
+          console.error('Auth callback error:', error);
+          router.push('/login?error=auth_callback_error');
           return;
         }
 
         if (data.session) {
-          router.push("/dashboard");
+          router.push('/dashboard');
         } else {
           setTimeout(async () => {
             const { data: sessionData } = await supabase.auth.getSession();
             if (!sessionData.session) {
-              router.push("/login?error=session_not_found_after_callback");
+              router.push('/login?error=session_not_found_after_callback');
             }
           }, 2000);
         }
       } catch (err) {
-        console.error("Unexpected error during auth callback:", err);
-        router.push("/login?error=unexpected_error");
+        console.error('Unexpected error during auth callback:', err);
+        router.push('/login?error=unexpected_error');
       }
     };
 

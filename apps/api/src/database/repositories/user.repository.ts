@@ -4,12 +4,13 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { User, Prisma } from 'generated/prisma';
 import { BaseRepository } from './base.repository';
 
-export interface IUserRepository extends BaseRepository<
-  User,
-  Prisma.UserCreateInput,
-  Prisma.UserUpdateInput,
-  Prisma.UserWhereInput
-> {
+export interface IUserRepository
+  extends BaseRepository<
+    User,
+    Prisma.UserCreateInput,
+    Prisma.UserUpdateInput,
+    Prisma.UserWhereInput
+  > {
   findByEmail(email: string): Promise<User | null>;
   findWithSocialAccounts(id: string): Promise<User | null>;
   findWithRecentPosts(id: string, limit?: number): Promise<User | null>;
@@ -31,7 +32,8 @@ export class UserRepository implements IUserRepository {
 
   async findByEmail(email: string): Promise<User> {
     const user = await this.prisma.user.findUnique({ where: { email } });
-    if (!user) throw new NotFoundException(`User with email ${email} not found`);
+    if (!user)
+      throw new NotFoundException(`User with email ${email} not found`);
     return user;
   }
 

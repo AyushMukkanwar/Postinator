@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import type React from "react";
+import type React from 'react';
 
-import { useState } from "react";
-import { signUpWithEmailAndPassword } from "../../auth/actions";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { useState } from 'react';
+import { signUpWithEmailAndPassword } from '../actions';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Card,
   CardContent,
@@ -16,38 +16,38 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Mail, Lock, AlertCircle, CheckCircle, Shield } from "lucide-react";
+} from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Mail, Lock, AlertCircle, CheckCircle, Shield } from 'lucide-react';
 
 export default function RegisterPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
-    setMessage("");
+    setError('');
+    setMessage('');
 
     if (password !== confirmPassword) {
-      setError("Passwords do not match.");
+      setError('Passwords do not match.');
       return;
     }
 
     // Basic password strength check (optional, enhance as needed)
     if (password.length < 6) {
-      setError("Password should be at least 6 characters long.");
+      setError('Password should be at least 6 characters long.');
       return;
     }
 
     const result = await signUpWithEmailAndPassword({ email, password });
 
     if (result.error) {
-      console.error("Error signing up:", result.error);
+      console.error('Error signing up:', result.error);
       setError(`Error signing up: ${result.error.message}`);
     } else if (result.data.user && result.data.user.identities?.length === 0) {
       // This condition might indicate that "Confirm email" is disabled in Supabase settings
@@ -61,7 +61,7 @@ export default function RegisterPage() {
       // If Supabase "Confirm email" is ON (default), this user object is returned,
       // but the user is not active until they confirm their email.
       setMessage(
-        "Registration successful! Please check your email to confirm your account."
+        'Registration successful! Please check your email to confirm your account.'
       );
       // Optionally clear form or redirect to a page indicating to check email
       // setEmail('');
@@ -72,7 +72,7 @@ export default function RegisterPage() {
       // Handle cases where user might be null but no error (e.g., user already registered but unconfirmed)
       // Supabase's signUp behavior for existing unconfirmed users can vary based on settings.
       setMessage(
-        "Request processed. If you are new, please check your email for a confirmation link. If you already registered, try logging in or password recovery."
+        'Request processed. If you are new, please check your email for a confirmation link. If you already registered, try logging in or password recovery.'
       );
     }
   };
@@ -178,7 +178,7 @@ export default function RegisterPage() {
 
         <CardFooter className="flex flex-col space-y-4">
           <div className="text-center text-sm text-slate-600">
-            Already have an account?{" "}
+            Already have an account?{' '}
             <Link
               href="/login"
               className="font-medium text-blue-600 hover:text-blue-500 transition-colors"

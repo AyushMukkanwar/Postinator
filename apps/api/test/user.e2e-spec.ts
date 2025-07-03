@@ -8,14 +8,13 @@ import { execSync } from 'child_process';
 import { getTestAccessToken } from './helpers/get-test-token';
 import { PrismaExceptionFilter } from 'src/filters/prisma-exception.filter';
 
-
-describe("User e2e tests", () => {
+describe('User e2e tests', () => {
   let app: INestApplication;
   let prisma: PrismaService;
   let dbContainer: DatabaseTestContainer;
   const token = getTestAccessToken();
-  
-  beforeAll(async() => {
+
+  beforeAll(async () => {
     // Start database container
     dbContainer = new DatabaseTestContainer();
     const connectionString = await dbContainer.start();
@@ -28,7 +27,7 @@ describe("User e2e tests", () => {
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile()
+    }).compile();
 
     app = moduleFixture.createNestApplication();
     prisma = moduleFixture.get<PrismaService>(PrismaService);
@@ -42,7 +41,7 @@ describe("User e2e tests", () => {
     );
 
     await app.init();
-  })
+  });
 
   afterAll(async () => {
     await app.close();
@@ -51,23 +50,23 @@ describe("User e2e tests", () => {
 
   beforeEach(async () => {
     await prisma.user.deleteMany({});
-  })
+  });
 
   it('/users POST - should create a user', async () => {
     const response = await request(app.getHttpServer())
-    .post('/users')
-    .set('Authorization', `Bearer ${token}`)
-    .send({
-      email: 'test@example.com',
-      name: 'Test User'
-    })
-    .expect(201);
+      .post('/users')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        email: 'test@example.com',
+        name: 'Test User',
+      })
+      .expect(201);
 
     expect(response.body).toMatchObject({
       email: 'test@example.com',
-      name: 'Test User'
-    })
-  })
+      name: 'Test User',
+    });
+  });
 
   it('/users POST - should return 409 for duplicate email', async () => {
     // Create first user
@@ -76,7 +75,7 @@ describe("User e2e tests", () => {
       .set('Authorization', `Bearer ${token}`)
       .send({
         email: 'duplicate@example.com',
-        name: 'First User'
+        name: 'First User',
       })
       .expect(201);
 
@@ -86,7 +85,7 @@ describe("User e2e tests", () => {
       .set('Authorization', `Bearer ${token}`)
       .send({
         email: 'duplicate@example.com',
-        name: 'Second User'
+        name: 'Second User',
       })
       .expect(409);
   });
@@ -356,9 +355,7 @@ describe("User e2e tests", () => {
   });
 
   it('should return 401 for requests without token', async () => {
-    await request(app.getHttpServer())
-      .get('/users')
-      .expect(401);
+    await request(app.getHttpServer()).get('/users').expect(401);
   });
 
   it('should return 401 for requests with invalid token', async () => {
@@ -367,4 +364,4 @@ describe("User e2e tests", () => {
       .set('Authorization', 'Bearer invalid-token')
       .expect(401);
   });
-})
+});

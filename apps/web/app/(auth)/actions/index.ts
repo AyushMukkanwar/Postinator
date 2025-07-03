@@ -1,7 +1,7 @@
 // apps/web/src/app/auth/actions/index.ts
-"use server";
+'use server';
 
-import { createSupabaseServerClient } from "../../../lib/supabase/server"; // Assuming @ is configured for src
+import { createSupabaseServerClient } from '../../../lib/supabase/server'; // Assuming @ is configured for src
 
 export async function signInWithEmailAndPassword(data: {
   // Corrected typo: signIn
@@ -19,12 +19,9 @@ export async function signInWithEmailAndPassword(data: {
 export async function signUpWithEmailAndPassword(data: {
   email: string;
   password: string;
-  name?: string;
-  avatar?: string;
 }) {
   const supabase = await createSupabaseServerClient();
-  
-  // First, sign up with Supabase
+
   const result = await supabase.auth.signUp({
     email: data.email,
     password: data.password,
@@ -32,23 +29,6 @@ export async function signUpWithEmailAndPassword(data: {
       emailRedirectTo: `${process.env.NEXT_PUBLIC_FRONTEND_URL}/login`,
     },
   });
-
-  // If signup was successful and user was created
-  if (result.data.user && !result.error) {
-    try {
-      // Create user in your backend using the access token
-      await createUserInBackendWithAuth({
-        email: data.email,
-        name: data.name || result.data.user.user_metadata?.full_name || "Anonymous User",
-        avatar: data.avatar || result.data.user.user_metadata?.avatar_url || ""
-      }, result.data.session?.access_token);
-      
-    } catch (backendError) {
-      console.error('Error creating user in backend:', backendError);
-      // Backend creation failed but Supabase signup succeeded
-      // You might want to handle this scenario appropriately
-    }
-  }
 
   return JSON.parse(JSON.stringify(result));
 }
@@ -63,8 +43,9 @@ async function createUserInBackendWithAuth(
   accessToken?: string
 ) {
   try {
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:3001";
-    
+    const backendUrl =
+      process.env.NEXT_PUBLIC_BACKEND_API_URL || 'http://localhost:3001';
+
     if (!backendUrl) {
       throw new Error('Backend URL not configured');
     }
@@ -82,20 +63,44 @@ async function createUserInBackendWithAuth(
     const response = await fetch(`${backendUrl}/users`, {
       method: 'POST',
       headers,
-      body: JSON.stringify(userData)
+      body: JSON.stringify(userData),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`Backend user creation failed: ${response.status} ${errorText}`);
+      throw new Error(
+        `Backend user creation failed: ${response.status} ${errorText}`
+      );
     }
 
     const createdUser = await response.json();
     console.log('User created in backend:', createdUser);
     return createdUser;
-    
   } catch (error) {
     console.error('Error calling backend:', error);
     throw error;
   }
+}
+
+export async function handleAfterSignIn(user: {
+  email: string;
+  name?: string;
+  avatar?: string;
+}) {
+  const supabase = await createSupabaseServerClient();
+
+  const session = (await supabase.auth.getSession()).data.session;
+
+  if (!session || !session.access_token) {
+    throw new Error('No valid session. User is not authenticated.');
+  }
+
+  return await createUserInBackendWithAuth(
+    {
+      email: user.email,
+      name: user.name || 'Anonymous User',
+      avatar: user.avatar || '',
+    },
+    session.access_token
+  );
 }

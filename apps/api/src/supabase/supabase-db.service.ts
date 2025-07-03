@@ -12,7 +12,7 @@ export class SupabaseDBService implements OnModuleInit {
   onModuleInit() {
     const supabaseUrl = this.configService.get<string>('SUPABASE_URL');
     const supabaseServiceRoleKey = this.configService.get<string>(
-      'SUPABASE_SERVICE_KEY',
+      'SUPABASE_SERVICE_KEY'
     );
 
     if (!supabaseUrl || !supabaseServiceRoleKey) {
@@ -32,7 +32,7 @@ export class SupabaseDBService implements OnModuleInit {
   getClient(): SupabaseClient {
     if (!this.client) {
       this.logger.error(
-        'Supabase client requested before initialization or init failed.',
+        'Supabase client requested before initialization or init failed.'
       );
       throw new Error('Supabase client is not initialized.');
     }

@@ -6,9 +6,23 @@ import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user/user.module';
 import { ConfigModule } from '@nestjs/config';
 import { SupabaseProviderModule } from './supabase/supabase.module';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 
 @Module({
   imports: [
+    ThrottlerModule.forRoot([
+      {
+        name: 'default',
+        ttl: 60000, // 1 minute
+        limit: 100, // 100 requests per minute per IP
+      },
+      {
+        name: 'strict',
+        ttl: 60000, // 1 minute
+        limit: 10, // 10 requests per minute per IP
+      },
+    ]),
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
@@ -18,6 +32,6 @@ import { SupabaseProviderModule } from './supabase/supabase.module';
     SupabaseProviderModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
 export class AppModule {}
