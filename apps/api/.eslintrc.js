@@ -16,10 +16,9 @@ module.exports = {
   extends: [
     'eslint:recommended',
     'plugin:@typescript-eslint/recommended',
-    'plugin:@typescript-eslint/recommended-requiring-type-checking',
     'prettier', // disable conflicting rules with prettier
   ],
-  ignorePatterns: ['dist/', 'build/', 'node_modules/'],
+  ignorePatterns: ['.eslintrc.js', 'dist/', 'build/', 'node_modules/'],
   rules: {
     // custom rules
   },

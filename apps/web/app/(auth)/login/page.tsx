@@ -60,9 +60,13 @@ export default function LoginPage() {
         console.error('Google Sign-In Error:', oauthError);
         setError(`Google Sign-In failed: ${oauthError.message}`);
       }
-    } catch (catchedError: any) {
+    } catch (catchedError: unknown) {
       console.error('Unexpected Google Sign-In Error:', catchedError);
-      setError(`An unexpected error occurred: ${catchedError.message}`);
+      setError(
+        `An unexpected error occurred: ${
+          catchedError instanceof Error ? catchedError.message : 'Unknown error'
+        }`
+      );
     }
   };
 
@@ -169,7 +173,7 @@ export default function LoginPage() {
 
         <CardFooter className="flex flex-col space-y-4">
           <div className="text-center text-sm text-slate-600">
-            Don't have an account?{' '}
+            Don&apos;t have an account?{' '}
             <Link
               href="/register"
               className="font-medium text-blue-600 hover:text-blue-500 transition-colors"

@@ -12,7 +12,7 @@ const useAxiosAuth = () => {
     const requestIntercept = axiosAuth.interceptors.request.use(
       async (config) => {
         const { data: sessionData } = await supabase.auth.getSession(); // Renamed for clarity
-        let accessToken = sessionData?.session?.access_token;
+        const accessToken = sessionData?.session?.access_token;
 
         if (accessToken && !config.headers['Authorization']) {
           // Check if accessToken exists

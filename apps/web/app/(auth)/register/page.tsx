@@ -4,7 +4,6 @@ import type React from 'react';
 
 import { useState } from 'react';
 import { signUpWithEmailAndPassword } from '../actions';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,7 +25,6 @@ export default function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
-  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

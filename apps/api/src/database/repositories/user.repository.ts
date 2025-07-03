@@ -9,7 +9,8 @@ export interface IUserRepository
     User,
     Prisma.UserCreateInput,
     Prisma.UserUpdateInput,
-    Prisma.UserWhereInput
+    Prisma.UserWhereInput,
+    Prisma.UserOrderByWithRelationInput
   > {
   findByEmail(email: string): Promise<User | null>;
   findWithSocialAccounts(id: string): Promise<User | null>;

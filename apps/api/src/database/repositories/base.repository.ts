@@ -1,12 +1,17 @@
-// src/database/repositories/base.repository.ts
-export interface BaseRepository<T, CreateInput, UpdateInput, WhereInput> {
+export interface BaseRepository<
+  T,
+  CreateInput,
+  UpdateInput,
+  WhereInput,
+  OrderByInput = unknown,
+> {
   create(data: CreateInput): Promise<T>;
   findById(id: string): Promise<T | null>;
   findMany(params?: {
     skip?: number;
     take?: number;
     where?: WhereInput;
-    orderBy?: any;
+    orderBy?: OrderByInput;
   }): Promise<T[]>;
   update(id: string, data: UpdateInput): Promise<T>;
   delete(id: string): Promise<T>;
