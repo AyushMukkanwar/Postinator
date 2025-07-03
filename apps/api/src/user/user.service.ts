@@ -5,9 +5,10 @@ import { User, Prisma } from 'generated/prisma';
 
 @Injectable()
 export class UserService {
-  constructor(private userRepository: UserRepository) {}
+  constructor(private readonly userRepository: UserRepository) {}
 
   async createUser(data: Prisma.UserCreateInput): Promise<User> {
+    // let repository handle unique‐constraint conflicts
     return this.userRepository.create(data);
   }
 
@@ -20,6 +21,7 @@ export class UserService {
   }
 
   async getUserByEmail(email: string): Promise<User | null> {
+    // repository will throw on DB errors; null means “not found”
     return this.userRepository.findByEmail(email);
   }
 
@@ -40,25 +42,13 @@ export class UserService {
   }
 
   async updateUser(id: string, data: Prisma.UserUpdateInput): Promise<User> {
-    try {
-      return await this.userRepository.update(id, data);
-    } catch (error) {
-      if (error.code === 'P2025') {
-        throw new NotFoundException(`User with ID ${id} not found`);
-      }
-      throw error;
-    }
+    // repository.handleError will throw NotFoundException if id doesn’t exist
+    return this.userRepository.update(id, data);
   }
 
   async deleteUser(id: string): Promise<User> {
-    try {
-      return await this.userRepository.delete(id);
-    } catch (error) {
-      if (error.code === 'P2025') {
-        throw new NotFoundException(`User with ID ${id} not found`);
-      }
-      throw error;
-    }
+    // same here—repository maps P2025 → NotFoundException
+    return this.userRepository.delete(id);
   }
 
   async getUsers(params?: {

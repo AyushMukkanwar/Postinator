@@ -126,12 +126,7 @@ export class PostRepository implements IPostRepository {
     return this.updateStatus(id, PostStatus.FAILED, undefined, errorMessage);
   }
 
-  async findMany(params?: {
-    skip?: number;
-    take?: number;
-    where?: Prisma.PostWhereInput;
-    orderBy?: Prisma.PostOrderByWithRelationInput;
-  }): Promise<Post[]> {
+  async findMany(params?: Prisma.PostFindManyArgs): Promise<Post[]> {
     const { skip, take, where, orderBy } = params || {};
     return this.prisma.post.findMany({
       skip,

@@ -1,5 +1,5 @@
 // src/database/repositories/user.repository.ts
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { User, Prisma } from 'generated/prisma';
 import { BaseRepository } from './base.repository';
@@ -20,23 +20,23 @@ export class UserRepository implements IUserRepository {
   constructor(private prisma: PrismaService) {}
 
   async create(data: Prisma.UserCreateInput): Promise<User> {
-    return this.prisma.user.create({ data });
+    return await this.prisma.user.create({ data });
   }
 
-  async findById(id: string): Promise<User | null> {
-    return this.prisma.user.findUnique({
-      where: { id },
-    });
+  async findById(id: string): Promise<User> {
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    if (!user) throw new NotFoundException(`User with ID ${id} not found`);
+    return user;
   }
 
-  async findByEmail(email: string): Promise<User | null> {
-    return this.prisma.user.findUnique({
-      where: { email },
-    });
+  async findByEmail(email: string): Promise<User> {
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (!user) throw new NotFoundException(`User with email ${email} not found`);
+    return user;
   }
 
-  async findWithSocialAccounts(id: string): Promise<User | null> {
-    return this.prisma.user.findUnique({
+  async findWithSocialAccounts(id: string): Promise<User> {
+    const user = await this.prisma.user.findUnique({
       where: { id },
       include: {
         socialAccounts: {
@@ -45,21 +45,23 @@ export class UserRepository implements IUserRepository {
         },
       },
     });
+    if (!user) throw new NotFoundException(`User with ID ${id} not found`);
+    return user;
   }
 
-  async findWithRecentPosts(id: string, limit = 5): Promise<User | null> {
-    return this.prisma.user.findUnique({
+  async findWithRecentPosts(id: string, limit = 5): Promise<User> {
+    const user = await this.prisma.user.findUnique({
       where: { id },
       include: {
         posts: {
           orderBy: { createdAt: 'desc' },
           take: limit,
-          include: {
-            socialAccount: true,
-          },
+          include: { socialAccount: true },
         },
       },
     });
+    if (!user) throw new NotFoundException(`User with ID ${id} not found`);
+    return user;
   }
 
   async findMany(params?: {
@@ -69,28 +71,18 @@ export class UserRepository implements IUserRepository {
     orderBy?: Prisma.UserOrderByWithRelationInput;
   }): Promise<User[]> {
     const { skip, take, where, orderBy } = params || {};
-    return this.prisma.user.findMany({
-      skip,
-      take,
-      where,
-      orderBy,
-    });
+    return await this.prisma.user.findMany({ skip, take, where, orderBy });
   }
 
   async update(id: string, data: Prisma.UserUpdateInput): Promise<User> {
-    return this.prisma.user.update({
-      where: { id },
-      data,
-    });
+    return await this.prisma.user.update({ where: { id }, data });
   }
 
   async delete(id: string): Promise<User> {
-    return this.prisma.user.delete({
-      where: { id },
-    });
+    return await this.prisma.user.delete({ where: { id } });
   }
 
   async count(where?: Prisma.UserWhereInput): Promise<number> {
-    return this.prisma.user.count({ where });
+    return await this.prisma.user.count({ where });
   }
 }

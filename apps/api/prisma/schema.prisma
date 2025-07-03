@@ -73,6 +73,7 @@ enum Platform {
 }
 
 enum PostStatus {
+  DRAFT
   SCHEDULED
   PUBLISHING
   PUBLISHED
