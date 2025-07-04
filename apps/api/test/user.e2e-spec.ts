@@ -202,6 +202,7 @@ describe('User e2e tests', () => {
         name: 'Single User',
       },
     });
+    const token = getTestAccessToken(user.email);
 
     const response = await request(app.getHttpServer())
       .get(`/users/${user.id}`)
@@ -222,6 +223,28 @@ describe('User e2e tests', () => {
       .expect(404);
   });
 
+  it("/users/:id GET - should return 403 when user tries to get another user's data", async () => {
+    const userA = await prisma.user.create({
+      data: {
+        email: 'userA@test.com',
+        name: 'User A',
+      },
+    });
+    const userB = await prisma.user.create({
+      data: {
+        email: 'userB@test.com',
+        name: 'User B',
+      },
+    });
+
+    const tokenA = getTestAccessToken(userA.email);
+
+    await request(app.getHttpServer())
+      .get(`/users/${userB.id}`)
+      .set('Authorization', `Bearer ${tokenA}`)
+      .expect(403);
+  });
+
   it('/users/:id/social-accounts GET - should return user with social accounts', async () => {
     const user = await prisma.user.create({
       data: {
@@ -229,6 +252,7 @@ describe('User e2e tests', () => {
         name: 'Social User',
       },
     });
+    const token = getTestAccessToken(user.email);
 
     const response = await request(app.getHttpServer())
       .get(`/users/${user.id}/social-accounts`)
@@ -241,6 +265,28 @@ describe('User e2e tests', () => {
     });
   });
 
+  it("/users/:id/social-accounts GET - should return 403 when user tries to get another user's social accounts", async () => {
+    const userA = await prisma.user.create({
+      data: {
+        email: 'userA_social@test.com',
+        name: 'User A Social',
+      },
+    });
+    const userB = await prisma.user.create({
+      data: {
+        email: 'userB_social@test.com',
+        name: 'User B Social',
+      },
+    });
+
+    const tokenA = getTestAccessToken(userA.email);
+
+    await request(app.getHttpServer())
+      .get(`/users/${userB.id}/social-accounts`)
+      .set('Authorization', `Bearer ${tokenA}`)
+      .expect(403);
+  });
+
   it('/users/:id/recent-posts GET - should return user with recent posts', async () => {
     const user = await prisma.user.create({
       data: {
@@ -248,6 +294,7 @@ describe('User e2e tests', () => {
         name: 'Posts User',
       },
     });
+    const token = getTestAccessToken(user.email);
 
     const response = await request(app.getHttpServer())
       .get(`/users/${user.id}/recent-posts?limit=5`)
@@ -260,6 +307,28 @@ describe('User e2e tests', () => {
     });
   });
 
+  it("/users/:id/recent-posts GET - should return 403 when user tries to get another user's recent posts", async () => {
+    const userA = await prisma.user.create({
+      data: {
+        email: 'userA_posts@test.com',
+        name: 'User A Posts',
+      },
+    });
+    const userB = await prisma.user.create({
+      data: {
+        email: 'userB_posts@test.com',
+        name: 'User B Posts',
+      },
+    });
+
+    const tokenA = getTestAccessToken(userA.email);
+
+    await request(app.getHttpServer())
+      .get(`/users/${userB.id}/recent-posts?limit=5`)
+      .set('Authorization', `Bearer ${tokenA}`)
+      .expect(403);
+  });
+
   it('/users/email/:email GET - should return user by email', async () => {
     const user = await prisma.user.create({
       data: {
@@ -267,6 +336,7 @@ describe('User e2e tests', () => {
         name: 'Find Me',
       },
     });
+    const token = getTestAccessToken(user.email);
 
     const response = await request(app.getHttpServer())
       .get(`/users/email/${user.email}`)
@@ -280,10 +350,35 @@ describe('User e2e tests', () => {
   });
 
   it('/users/email/:email GET - should return 404 for non-existent email', async () => {
+    const nonexistentEmail = 'nonexistent@test.com';
+    const token = getTestAccessToken(nonexistentEmail);
+
     await request(app.getHttpServer())
-      .get('/users/email/nonexistent@test.com')
+      .get(`/users/email/${nonexistentEmail}`)
       .set('Authorization', `Bearer ${token}`)
       .expect(404);
+  });
+
+  it("/users/email/:email GET - should return 403 when user tries to get another user's data by email", async () => {
+    const userA = await prisma.user.create({
+      data: {
+        email: 'userA_email@test.com',
+        name: 'User A Email',
+      },
+    });
+    const userB = await prisma.user.create({
+      data: {
+        email: 'userB_email@test.com',
+        name: 'User B Email',
+      },
+    });
+
+    const tokenA = getTestAccessToken(userA.email);
+
+    await request(app.getHttpServer())
+      .get(`/users/email/${userB.email}`)
+      .set('Authorization', `Bearer ${tokenA}`)
+      .expect(403);
   });
 
   it('/users/:id PUT - should update user', async () => {
@@ -293,6 +388,8 @@ describe('User e2e tests', () => {
         name: 'Update User',
       },
     });
+
+    const token = getTestAccessToken(user.email);
 
     const updateDto = {
       name: 'Updated Name',
@@ -322,6 +419,31 @@ describe('User e2e tests', () => {
       .expect(404);
   });
 
+  it("/users/:id PUT - should return 403 when user tries to update another user's data", async () => {
+    const userA = await prisma.user.create({
+      data: {
+        email: 'userA_update@test.com',
+        name: 'User A Update',
+      },
+    });
+    const userB = await prisma.user.create({
+      data: {
+        email: 'userB_update@test.com',
+        name: 'User B Update',
+      },
+    });
+
+    const tokenA = getTestAccessToken(userA.email);
+
+    await request(app.getHttpServer())
+      .put(`/users/${userB.id}`)
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({
+        name: 'Malicious Update',
+      })
+      .expect(403);
+  });
+
   it('/users/:id DELETE - should delete user', async () => {
     const user = await prisma.user.create({
       data: {
@@ -329,6 +451,7 @@ describe('User e2e tests', () => {
         name: 'Delete User',
       },
     });
+    const token = getTestAccessToken(user.email);
 
     const response = await request(app.getHttpServer())
       .delete(`/users/${user.id}`)
@@ -352,6 +475,28 @@ describe('User e2e tests', () => {
       .delete('/users/non-existent-id')
       .set('Authorization', `Bearer ${token}`)
       .expect(404);
+  });
+
+  it("/users/:id DELETE - should return 403 when user tries to delete another user's data", async () => {
+    const userA = await prisma.user.create({
+      data: {
+        email: 'userA_delete@test.com',
+        name: 'User A Delete',
+      },
+    });
+    const userB = await prisma.user.create({
+      data: {
+        email: 'userB_delete@test.com',
+        name: 'User B Delete',
+      },
+    });
+
+    const tokenA = getTestAccessToken(userA.email);
+
+    await request(app.getHttpServer())
+      .delete(`/users/${userB.id}`)
+      .set('Authorization', `Bearer ${tokenA}`)
+      .expect(403);
   });
 
   it('should return 401 for requests without token', async () => {
