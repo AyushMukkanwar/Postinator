@@ -1,7 +1,7 @@
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 
-export default async function DashboardPage() {
+export default async function HistoryPage() {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.auth.getUser();
   if (error || !data?.user) {
@@ -15,7 +15,7 @@ export default async function DashboardPage() {
           Coming Soon
         </h1>
         <p className="text-muted-foreground text-lg">
-          Dashboard page is under development
+          History page is under development
         </p>
         <div className="mt-8 w-24 h-1 bg-gradient-to-r from-yellow-400 to-orange-500 mx-auto rounded-full"></div>
       </div>

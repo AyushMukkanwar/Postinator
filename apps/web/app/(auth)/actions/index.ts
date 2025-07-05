@@ -1,7 +1,9 @@
 // apps/web/src/app/auth/actions/index.ts
 'use server';
 
-import { createSupabaseServerClient } from '../../../lib/supabase/server'; // Assuming @ is configured for src
+import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 
 export async function signInWithEmailAndPassword(data: {
   // Corrected typo: signIn
@@ -103,4 +105,17 @@ export async function handleAfterSignIn(user: {
     },
     session.access_token
   );
+}
+
+export async function logout() {
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.auth.signOut();
+
+  if (error) {
+    console.error('Error logging out:', error);
+    redirect('/error');
+  }
+
+  revalidatePath('/', 'layout');
+  redirect('/login');
 }

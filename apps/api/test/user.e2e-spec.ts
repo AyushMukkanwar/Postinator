@@ -44,8 +44,15 @@ describe('User e2e tests', () => {
   });
 
   afterAll(async () => {
+    console.log('🛑 afterAll: closing app…');
     await app.close();
+
+    console.log('🛑 afterAll: disconnecting prisma…');
+    await prisma.$disconnect();
+
+    console.log('🛑 afterAll: stopping DB container…');
     await dbContainer.stop();
+    console.log('🛑 afterAll: STOPPED DB container…');
   });
 
   beforeEach(async () => {
