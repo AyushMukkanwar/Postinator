@@ -52,16 +52,30 @@ async function createUserInBackendWithAuth(
       throw new Error('Backend URL not configured');
     }
 
-    // Prepare headers - same pattern as your axios interceptor
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     };
 
-    // Add authorization header if we have an access token (same logic as your interceptor)
     if (accessToken) {
       headers['Authorization'] = `Bearer ${accessToken}`;
     }
 
+    // Check if user exists
+    const getUserResponse = await fetch(
+      `${backendUrl}/users/email/${userData.email}`,
+      {
+        method: 'GET',
+        headers,
+      }
+    );
+
+    if (getUserResponse.ok) {
+      const existingUser = await getUserResponse.json();
+      console.log('User already exists in backend:', existingUser);
+      return existingUser;
+    }
+
+    // If user does not exist, create them
     const response = await fetch(`${backendUrl}/users`, {
       method: 'POST',
       headers,

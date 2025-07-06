@@ -3,7 +3,7 @@
 import type React from 'react';
 
 import { useState } from 'react';
-import { signInWithEmailAndPassword } from '../actions';
+import { signInWithEmailAndPassword, handleAfterSignIn } from '../actions';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getSupabaseFrontendClient } from '../../../lib/supabase/client';
@@ -40,7 +40,12 @@ export default function LoginPage() {
     if (signInError) {
       console.error('Error logging in:', signInError);
       setError(`Login failed: ${signInError.message}`);
-    } else {
+    } else if (data.user) {
+      await handleAfterSignIn({
+        email: data.user.email!,
+        name: data.user.user_metadata?.full_name,
+        avatar: data.user.user_metadata?.avatar_url,
+      });
       console.log('Logged in successfully:', data);
       router.push('/dashboard');
     }
@@ -49,10 +54,12 @@ export default function LoginPage() {
   const handleGoogleSignIn = async () => {
     setError('');
     try {
+      console.log(`redirecting to ${window.location.origin}/callback`);
+      await new Promise((resolve) => setTimeout(resolve, 5000));
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: `${window.location.origin}/callback`,
         },
       });
 

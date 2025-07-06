@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { handleAfterSignIn } from '../actions';
 import { getSupabaseFrontendClient } from '../../../lib/supabase/client';
 
 export default function AuthCallbackPage() {
@@ -20,6 +21,11 @@ export default function AuthCallbackPage() {
         }
 
         if (data.session) {
+          await handleAfterSignIn({
+            email: data.session.user.email!,
+            name: data.session.user.user_metadata.full_name,
+            avatar: data.session.user.user_metadata.avatar_url,
+          });
           router.push('/dashboard');
         } else {
           setTimeout(async () => {

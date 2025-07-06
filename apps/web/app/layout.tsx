@@ -4,6 +4,7 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '@/components/theme-provider';
 import { DashboardLayout } from '@/components/dashboard-layout';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -12,11 +13,21 @@ export const metadata: Metadata = {
   description: 'Manage your social media presence',
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const avatar =
+    user?.user_metadata?.avatar_url || user?.user_metadata?.picture;
+  const username = user?.user_metadata?.user_name;
+  const email = user?.email;
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
@@ -26,7 +37,13 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <DashboardLayout>{children}</DashboardLayout>
+          <DashboardLayout
+            avatar={avatar || undefined}
+            username={username || undefined}
+            email={email || undefined}
+          >
+            {children}
+          </DashboardLayout>
         </ThemeProvider>
       </body>
     </html>

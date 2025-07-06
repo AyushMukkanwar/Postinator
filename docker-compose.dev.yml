@@ -13,13 +13,12 @@ services:
       - ./packages:/app/packages
       - ./turbo.json:/app/turbo.json
       - ./package.json:/app/package.json
-      - ./package-lock.json:/app/package-lock.json
       # Prevent node_modules from being overwritten
       - /app/node_modules
       - /app/apps/web/node_modules
     environment:
       - NODE_ENV=development
-    command: sh -c "pnpm install && pnpm dev --filter=web"
+    command: pnpm dev --filter=web
     stdin_open: true
     tty: true
 
@@ -27,6 +26,8 @@ services:
     build:
       context: .
       dockerfile: apps/api/Dockerfile.api
+    dns:
+      - 8.8.8.8
     ports:
       - '3001:3001'
     volumes:
@@ -35,12 +36,17 @@ services:
       - ./packages:/app/packages
       - ./turbo.json:/app/turbo.json
       - ./package.json:/app/package.json
-      - ./package-lock.json:/app/package-lock.json
       # Prevent node_modules from being overwritten
       - /app/node_modules
-      - /app/apps/web/node_modules
+      - /app/apps/api/node_modules
     environment:
       - NODE_ENV=development
-    command: sh -c "pnpm install && pnpm dev --filter=api"
+    command: pnpm dev --filter=api
     stdin_open: true
     tty: true
+
+volumes:
+  node_modules:
+  web_node_modules:
+  api_node_modules:
+  packages_node_modules:

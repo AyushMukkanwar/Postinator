@@ -17,8 +17,8 @@ COPY apps/web/package*.json ./apps/web/
 COPY apps/api/package*.json ./apps/api/
 COPY packages ./packages
 
-# Install dependencies
-RUN pnpm install --frozen-lockfile
+# Install dependencies for api and its dependencies
+RUN pnpm install --filter=api... --frozen-lockfile
 
 # Copy source code
 COPY apps/api ./apps/api
