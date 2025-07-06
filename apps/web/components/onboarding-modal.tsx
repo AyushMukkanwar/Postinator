@@ -80,7 +80,7 @@ export function OnboardingModal() {
             Welcome to Social Media Dashboard!
           </DialogTitle>
           <DialogDescription>
-            Let&appos;s get you set up. You can always change these settings
+            Let&apos;s get you set up. You can always change these settings
             later.
           </DialogDescription>
         </DialogHeader>
