@@ -28,4 +28,13 @@ export class UpdateUserDto {
   @IsOptional()
   @IsString()
   avatar?: string;
+
+  @ApiProperty({
+    description: 'User timezone',
+    required: false,
+    example: 'UTC',
+  })
+  @IsOptional()
+  @IsString()
+  timezone?: string;
 }

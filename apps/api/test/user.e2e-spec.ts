@@ -66,6 +66,7 @@ describe('User e2e tests', () => {
       .send({
         email: 'test@example.com',
         name: 'Test User',
+        timezone: 'IST',
       })
       .expect(201);
 

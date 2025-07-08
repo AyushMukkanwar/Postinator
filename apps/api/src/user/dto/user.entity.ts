@@ -34,6 +34,26 @@ export class SocialAccountEntity {
   })
   avatar?: string | null;
 
+  @ApiProperty({
+    description: 'Access token for platform API',
+    example: 'access_token_123',
+  })
+  accessToken: string;
+
+  @ApiProperty({
+    description: 'Refresh token for platform API',
+    required: false,
+    example: 'refresh_token_456',
+  })
+  refreshToken?: string | null;
+
+  @ApiProperty({
+    description: 'Token expiration date',
+    required: false,
+    example: '2024-06-01T00:00:00.000Z',
+  })
+  expiresAt?: Date | null;
+
   @ApiProperty({ description: 'Whether account is active', example: true })
   isActive: boolean;
 
@@ -58,6 +78,16 @@ export class PostEntity {
   content: string;
 
   @ApiProperty({
+    description: 'Array of media URLs (images and videos)',
+    type: [String],
+    example: [
+      'https://example.com/image1.jpg',
+      'https://example.com/video1.mp4',
+    ],
+  })
+  media: string[];
+
+  @ApiProperty({
     description: 'Scheduled publication time',
     example: '2024-01-01T12:00:00.000Z',
   })
@@ -72,7 +102,14 @@ export class PostEntity {
 
   @ApiProperty({
     description: 'Post status',
-    enum: ['SCHEDULED', 'PUBLISHING', 'PUBLISHED', 'FAILED', 'CANCELLED'],
+    enum: [
+      'DRAFT',
+      'SCHEDULED',
+      'PUBLISHING',
+      'PUBLISHED',
+      'FAILED',
+      'CANCELLED',
+    ],
     example: 'SCHEDULED',
   })
   status: string;
@@ -142,6 +179,13 @@ export class UserEntity {
     example: 'https://example.com/avatar.jpg',
   })
   avatar?: string | null;
+
+  @ApiProperty({
+    description: 'User timezone (IANA timezone identifier)',
+    example: 'America/New_York',
+    default: 'UTC',
+  })
+  timezone: string;
 
   @ApiProperty({
     description: 'User creation date',
