@@ -20,6 +20,7 @@ model User {
   email     String   @unique
   name      String?
   avatar    String?
+  timezone  String   @default("UTC") // IANA timezone identifier (e.g., "America/New_York")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   
@@ -52,6 +53,7 @@ model SocialAccount {
 model Post {
   id           String     @id @default(cuid())
   content      String
+  media        String[]   @default([]) // Array of media URLs (images, videos)
   scheduledFor DateTime
   publishedAt  DateTime?
   status       PostStatus @default(SCHEDULED)
