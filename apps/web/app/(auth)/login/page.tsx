@@ -2,7 +2,7 @@
 
 import type React from 'react';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { signInWithEmailAndPassword, handleAfterSignIn } from '../actions';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -28,6 +28,11 @@ export default function LoginPage() {
   const router = useRouter();
   const [error, setError] = useState('');
   const supabase = getSupabaseFrontendClient();
+  const [origin, setOrigin] = useState('');
+
+  useEffect(() => {
+    setOrigin(window.location.origin);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,14 +57,13 @@ export default function LoginPage() {
   };
 
   const handleGoogleSignIn = async () => {
+    if (!origin) return;
     setError('');
     try {
-      console.log(`redirecting to ${window.location.origin}/callback`);
-      await new Promise((resolve) => setTimeout(resolve, 5000));
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/callback`,
+          redirectTo: `${origin}/callback`,
         },
       });
 
