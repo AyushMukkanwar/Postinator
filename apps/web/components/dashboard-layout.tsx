@@ -9,27 +9,14 @@ import { OnboardingModal } from './onboarding-modal';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
-  avatar?: string;
-  username?: string;
-  email?: string;
 }
 
-export function DashboardLayout({
-  children,
-  avatar,
-  username,
-  email,
-}: DashboardLayoutProps) {
+export function DashboardLayout({ children }: DashboardLayoutProps) {
   const [isSidePanelOpen, setIsSidePanelOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-background">
-      <NavBar
-        onMenuClick={() => setIsSidePanelOpen(true)}
-        avatar={avatar}
-        username={username}
-        email={email}
-      />
+      <NavBar onMenuClick={() => setIsSidePanelOpen(true)} />
 
       <main className="flex-1">{children}</main>
 

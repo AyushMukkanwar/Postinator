@@ -133,3 +133,12 @@ export async function logout() {
   revalidatePath('/', 'layout');
   redirect('/login');
 }
+
+export async function checkAuth() {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase.auth.getUser();
+  if (error || !data?.user) {
+    redirect('/login');
+  }
+  return data.user;
+}

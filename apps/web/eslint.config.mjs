@@ -1,23 +1,22 @@
 import config from '../../packages/eslint-config/index.js';
 import reactInternal from '../../packages/eslint-config/react-internal.js';
-import globals from 'globals';
+import { flatConfig as pluginNext } from '@next/eslint-plugin-next';
 
 export default [
   ...config,
   ...reactInternal,
+  pluginNext.coreWebVitals,
   {
     files: ['**/*.{js,jsx,ts,tsx}'],
-    languageOptions: {
-      globals: {
-        ...globals.browser,
-      },
-    },
     settings: {
       'import/resolver': {
         typescript: {
-          project: ['./tsconfig.json'],
+          project: ['./tsconfig.json', './.next/tsconfig.json'],
         },
       },
+    },
+    rules: {
+      'import/no-unresolved': 'error',
     },
   },
 ];

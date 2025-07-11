@@ -20,7 +20,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { saveUserInfo, type UserInfo } from '@/actions/user';
+import { useUserStore } from '@/store/userStore';
+import { updateUser } from '@/actions/user';
 
 const timezones = [
   'America/New_York',
@@ -37,25 +38,21 @@ const timezones = [
 export function OnboardingModal() {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [formData, setFormData] = useState<UserInfo>({
-    username: '',
-    timezone: '',
-    platforms: { linkedin: false, x: false },
-  });
+  const { user, setUser } = useUserStore();
 
   useEffect(() => {
-    // Check if user has completed onboarding
-    const hasCompletedOnboarding = localStorage.getItem('onboardingCompleted');
-    if (!hasCompletedOnboarding) {
+    if (user && (!user.name || !user.timezone)) {
       setIsOpen(true);
     }
-  }, []);
+  }, [user]);
 
   const handleSubmit = async () => {
+    if (!user) return;
+
     setIsLoading(true);
     try {
-      await saveUserInfo(formData);
-      localStorage.setItem('onboardingCompleted', 'true');
+      const updatedUser = await updateUser(user);
+      setUser(updatedUser);
       setIsOpen(false);
     } catch (error) {
       console.error('Failed to save user info:', error);
@@ -65,9 +62,10 @@ export function OnboardingModal() {
   };
 
   const handleSkip = () => {
-    localStorage.setItem('onboardingCompleted', 'true');
     setIsOpen(false);
   };
+
+  if (!user) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={() => {}}>
@@ -93,10 +91,8 @@ export function OnboardingModal() {
               <Input
                 id="onboarding-username"
                 placeholder="Enter your username"
-                value={formData.username}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, username: e.target.value }))
-                }
+                value={user.name ?? ''}
+                onChange={(e) => setUser({ name: e.target.value })}
                 className="pl-10 focus:ring-2 focus:ring-orange-400"
               />
             </div>
@@ -105,10 +101,8 @@ export function OnboardingModal() {
           <div className="space-y-2">
             <Label htmlFor="onboarding-timezone">Timezone</Label>
             <Select
-              value={formData.timezone}
-              onValueChange={(value) =>
-                setFormData((prev) => ({ ...prev, timezone: value }))
-              }
+              value={user.timezone}
+              onValueChange={(value) => setUser({ timezone: value })}
             >
               <SelectTrigger className="focus:ring-2 focus:ring-orange-400">
                 <SelectValue placeholder="Select your timezone" />
@@ -134,13 +128,7 @@ export function OnboardingModal() {
                 </div>
                 <Switch
                   id="onboarding-linkedin"
-                  checked={formData.platforms.linkedin}
-                  onCheckedChange={(checked) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      platforms: { ...prev.platforms, linkedin: checked },
-                    }))
-                  }
+                  disabled
                   className="data-[state=checked]:bg-blue-600"
                 />
               </div>
@@ -152,13 +140,7 @@ export function OnboardingModal() {
                 </div>
                 <Switch
                   id="onboarding-x"
-                  checked={formData.platforms.x}
-                  onCheckedChange={(checked) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      platforms: { ...prev.platforms, x: checked },
-                    }))
-                  }
+                  disabled
                   className="data-[state=checked]:bg-slate-700"
                 />
               </div>
@@ -178,7 +160,7 @@ export function OnboardingModal() {
           <Button
             onClick={handleSubmit}
             className="flex-1 bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-white font-medium shadow-lg"
-            disabled={isLoading}
+            disabled={isLoading || !user.name || !user.timezone}
           >
             {isLoading ? 'Setting up...' : 'Get Started'}
           </Button>

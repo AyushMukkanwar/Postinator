@@ -14,7 +14,8 @@ import {
 } from '@/components/ui/sheet';
 import { useTheme } from 'next-themes';
 import { logout } from '@/app/(auth)/actions';
-import { getUserInfo, saveUserInfo, type UserInfo } from '@/actions/user';
+import { useUserStore } from '@/store/userStore';
+import { updateUser } from '@/actions/user';
 
 interface SidePanelProps {
   isOpen: boolean;
@@ -24,25 +25,20 @@ interface SidePanelProps {
 export function SidePanel({ isOpen, onClose }: SidePanelProps) {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  const [userInfo, setUserInfo] = useState<UserInfo>({
-    username: '',
-    timezone: '',
-    platforms: { linkedin: false, x: false },
-  });
+  const { user, setUser } = useUserStore();
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    const stored = getUserInfo();
-    if (stored) {
-      setUserInfo(stored);
-    }
   }, []);
 
   const handleSave = async () => {
+    if (!user) return;
+
     setIsLoading(true);
     try {
-      await saveUserInfo(userInfo);
+      const updatedUser = await updateUser(user);
+      setUser(updatedUser);
     } catch (error) {
       console.error('Failed to save user info:', error);
     } finally {
@@ -50,7 +46,7 @@ export function SidePanel({ isOpen, onClose }: SidePanelProps) {
     }
   };
 
-  if (!mounted) {
+  if (!mounted || !user) {
     return null;
   }
 
@@ -90,12 +86,11 @@ export function SidePanel({ isOpen, onClose }: SidePanelProps) {
                 <Input
                   id="username"
                   placeholder="Enter username"
-                  value={userInfo.username}
+                  value={user.name ?? ''}
                   onChange={(e) =>
-                    setUserInfo((prev) => ({
-                      ...prev,
-                      username: e.target.value,
-                    }))
+                    setUser({
+                      name: e.target.value,
+                    })
                   }
                   className="pl-10 focus:ring-2 focus:ring-orange-400"
                 />
@@ -107,9 +102,11 @@ export function SidePanel({ isOpen, onClose }: SidePanelProps) {
               <Input
                 id="timezone"
                 placeholder="e.g., America/New_York"
-                value={userInfo.timezone}
+                value={user.timezone}
                 onChange={(e) =>
-                  setUserInfo((prev) => ({ ...prev, timezone: e.target.value }))
+                  setUser({
+                    timezone: e.target.value,
+                  })
                 }
                 className="focus:ring-2 focus:ring-orange-400"
               />
@@ -128,13 +125,7 @@ export function SidePanel({ isOpen, onClose }: SidePanelProps) {
                 </div>
                 <Switch
                   id="linkedin"
-                  checked={userInfo.platforms.linkedin}
-                  onCheckedChange={(checked) =>
-                    setUserInfo((prev) => ({
-                      ...prev,
-                      platforms: { ...prev.platforms, linkedin: checked },
-                    }))
-                  }
+                  disabled
                   className="data-[state=checked]:bg-blue-600"
                 />
               </div>
@@ -146,13 +137,7 @@ export function SidePanel({ isOpen, onClose }: SidePanelProps) {
                 </div>
                 <Switch
                   id="x"
-                  checked={userInfo.platforms.x}
-                  onCheckedChange={(checked) =>
-                    setUserInfo((prev) => ({
-                      ...prev,
-                      platforms: { ...prev.platforms, x: checked },
-                    }))
-                  }
+                  disabled
                   className="data-[state=checked]:bg-slate-700"
                 />
               </div>

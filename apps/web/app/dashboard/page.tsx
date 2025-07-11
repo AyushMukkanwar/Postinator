@@ -1,12 +1,7 @@
-import { createSupabaseServerClient } from '@/lib/supabase/server';
-import { redirect } from 'next/navigation';
+import { checkAuth } from '../(auth)/actions';
 
 export default async function DashboardPage() {
-  const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase.auth.getUser();
-  if (error || !data?.user) {
-    redirect('/login');
-  }
+  await checkAuth();
 
   return (
     <div className="container mx-auto py-8">

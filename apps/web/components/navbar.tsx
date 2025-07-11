@@ -5,11 +5,10 @@ import { Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
+import { useUserStore } from '@/store/userStore';
+
 interface NavBarProps {
   onMenuClick: () => void;
-  avatar?: string;
-  username?: string;
-  email?: string;
 }
 
 const navItems = [
@@ -19,9 +18,13 @@ const navItems = [
   { href: '/history', label: 'History' },
 ];
 
-export function NavBar({ onMenuClick, avatar, username, email }: NavBarProps) {
+export function NavBar({ onMenuClick }: NavBarProps) {
+  const { getUser } = useUserStore();
+  const user = getUser();
+  const { avatar, name, email } = user || {};
   const pathname = usePathname();
   const isHomePage = pathname === '/';
+
   const isUserLoggedIn = !!email; // Check if user exists by email
 
   // Home page navbar - simplified version
@@ -41,8 +44,8 @@ export function NavBar({ onMenuClick, avatar, username, email }: NavBarProps) {
                   />
                 ) : (
                   <div className="h-8 w-8 rounded-full bg-gradient-to-r from-yellow-400 to-orange-500 flex items-center justify-center shadow-lg text-white text-sm font-medium">
-                    {username
-                      ? username.slice(0, 2).toUpperCase()
+                    {name
+                      ? name.slice(0, 2).toUpperCase()
                       : email.slice(0, 2).toUpperCase()}
                   </div>
                 )
@@ -90,8 +93,8 @@ export function NavBar({ onMenuClick, avatar, username, email }: NavBarProps) {
                 />
               ) : (
                 <div className="h-8 w-8 rounded-full bg-gradient-to-r from-yellow-400 to-orange-500 flex items-center justify-center shadow-lg text-white">
-                  {username
-                    ? username.slice(0, 2).toUpperCase()
+                  {name
+                    ? name.slice(0, 2).toUpperCase()
                     : email
                       ? email.slice(0, 2).toUpperCase()
                       : 'P'}
