@@ -15,7 +15,7 @@ export const useUserStore = create<UserState>((set, get) => ({
   getUser: () => get().user,
   setUser: (user) =>
     set((state) => ({
-      user: state.user ? { ...state.user, ...user } : null,
+      user: state.user ? { ...state.user, ...user } : (user as User),
     })),
   deleteUser: () => set({ user: null }),
 }));

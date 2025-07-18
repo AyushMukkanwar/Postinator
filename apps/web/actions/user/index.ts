@@ -4,7 +4,12 @@ import { axiosAuth } from '@/lib/axios';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { User } from '@/types/user';
 
-export const createUser = async (user: Partial<User>) => {
+export const createUser = async (user: {
+  email: string;
+  name?: string;
+  avatar?: string;
+  timezone?: string;
+}) => {
   const supabase = await createSupabaseServerClient();
   const {
     data: { session },
@@ -14,7 +19,7 @@ export const createUser = async (user: Partial<User>) => {
     throw new Error('Not authenticated');
   }
 
-  const response = await axiosAuth.post('/user', user, {
+  const response = await axiosAuth.post('/users', user, {
     headers: {
       Authorization: `Bearer ${session.access_token}`,
     },
@@ -33,16 +38,33 @@ export const getUserByEmail = async (email: string): Promise<User> => {
     throw new Error('Not authenticated');
   }
 
-  const response = await axiosAuth.get(`/users/email/${email}`, {
-    headers: {
-      Authorization: `Bearer ${session.access_token}`,
-    },
-  });
+  try {
+    const response = await axiosAuth.get(`/users/email/${email}`, {
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+      },
+    });
 
-  return response.data;
+    return response.data;
+  } catch (error: any) {
+    console.error('Error in getUserByEmail():', {
+      message: error.message,
+      status: error.response?.status,
+      data: error.response?.data,
+    });
+    throw error; // Re-throw or handle appropriately
+  }
 };
 
-export const updateUser = async (user: Partial<User>): Promise<User> => {
+export const updateUser = async (
+  id: string,
+  user: {
+    email?: string;
+    name?: string | null;
+    avatar?: string | null;
+    timezone?: string;
+  }
+): Promise<User> => {
   const supabase = await createSupabaseServerClient();
   const {
     data: { session },
@@ -52,7 +74,7 @@ export const updateUser = async (user: Partial<User>): Promise<User> => {
     throw new Error('Not authenticated');
   }
 
-  const response = await axiosAuth.patch('/user', user, {
+  const response = await axiosAuth.put(`/users/${id}`, user, {
     headers: {
       Authorization: `Bearer ${session.access_token}`,
     },
@@ -61,7 +83,7 @@ export const updateUser = async (user: Partial<User>): Promise<User> => {
   return response.data;
 };
 
-export const deleteUser = async () => {
+export const deleteUser = async (id: string) => {
   const supabase = await createSupabaseServerClient();
   const {
     data: { session },
@@ -71,7 +93,7 @@ export const deleteUser = async () => {
     throw new Error('Not authenticated');
   }
 
-  const response = await axiosAuth.delete('/user', {
+  const response = await axiosAuth.delete(`/users/${id}`, {
     headers: {
       Authorization: `Bearer ${session.access_token}`,
     },

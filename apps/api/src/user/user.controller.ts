@@ -213,7 +213,23 @@ export class UserController {
   @ApiResponse({ status: 404, description: 'User not found' })
   @ApiParam({ name: 'email', type: 'string', description: 'User email' })
   async getUserByEmail(@Param('email') email: string): Promise<User | null> {
-    return this.userService.getUserByEmail(email);
+    console.log('[Controller] GET /users/email/:email called');
+    console.log('[Controller] Email param received:', email);
+
+    try {
+      const user = await this.userService.getUserByEmail(email);
+
+      if (!user) {
+        console.warn('[Controller] No user found for email:', email);
+        return null; // or throw new NotFoundException('User not found');
+      }
+
+      console.log('[Controller] User found:', user.id); // or log more fields if safe
+      return user;
+    } catch (error) {
+      console.error('[Controller] Error in getUserByEmail:', error);
+      throw error; // or wrap in InternalServerErrorException if not already handled
+    }
   }
 
   @Put(':id')
