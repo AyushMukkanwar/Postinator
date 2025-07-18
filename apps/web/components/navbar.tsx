@@ -19,13 +19,14 @@ const navItems = [
 ];
 
 export function NavBar({ onMenuClick }: NavBarProps) {
-  const { getUser } = useUserStore();
-  const user = getUser();
+  const user = useUserStore((state) => state.user);
   const { avatar, name, email } = user || {};
   const pathname = usePathname();
   const isHomePage = pathname === '/';
 
   const isUserLoggedIn = !!email; // Check if user exists by email
+
+  console.log('user = ', user);
 
   // Home page navbar - simplified version
   if (isHomePage) {
@@ -36,10 +37,10 @@ export function NavBar({ onMenuClick }: NavBarProps) {
             {/* Logo and Brand */}
             <div className="flex items-center space-x-3">
               {isUserLoggedIn ? (
-                avatar ? (
+                avatar && avatar.length > 0 ? (
                   <img
                     alt="pfp"
-                    src={avatar || '/placeholder.svg'}
+                    src={avatar}
                     className="h-8 w-8 rounded-full"
                   />
                 ) : (
@@ -85,12 +86,8 @@ export function NavBar({ onMenuClick }: NavBarProps) {
         <div className="flex h-16 items-center">
           <div className="flex items-center space-x-4 lg:space-x-6">
             <Link href="/dashboard" className="flex items-center space-x-2">
-              {avatar ? (
-                <img
-                  alt="pfp"
-                  src={avatar || '/placeholder.svg'}
-                  className="h-8 w-8 rounded-full"
-                />
+              {avatar && avatar.length > 0 ? (
+                <img alt="pfp" src={avatar} className="h-8 w-8 rounded-full" />
               ) : (
                 <div className="h-8 w-8 rounded-full bg-gradient-to-r from-yellow-400 to-orange-500 flex items-center justify-center shadow-lg text-white">
                   {name
@@ -126,7 +123,10 @@ export function NavBar({ onMenuClick }: NavBarProps) {
             <Button
               variant="ghost"
               size="icon"
-              onClick={onMenuClick}
+              onClick={() => {
+                console.log('NavBar: Menu button clicked');
+                onMenuClick();
+              }}
               className="h-9 w-9 hover:bg-gradient-to-r hover:from-yellow-400/10 hover:to-orange-500/10"
             >
               <Menu className="h-4 w-4" />

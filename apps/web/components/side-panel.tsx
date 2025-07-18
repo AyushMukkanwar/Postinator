@@ -1,11 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Moon, Sun, User, Linkedin, Twitter } from 'lucide-react';
+import { Moon, Sun } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import {
   Sheet,
   SheetContent,
@@ -15,7 +13,50 @@ import {
 import { useTheme } from 'next-themes';
 import { logout } from '@/app/(auth)/actions';
 import { useUserStore } from '@/store/userStore';
-import { updateUser } from '@/actions/user';
+import { getPlatformDisplayName, Platforms } from '@/types/socialAccount';
+import { BaseToggle } from './base-toggle';
+import { UserProfile } from './user-profile';
+
+// Simple Icons components (you'll need to install simple-icons-react or create these)
+const LinkedInIcon = () => (
+  <svg
+    className="h-4 w-4 text-blue-600"
+    viewBox="0 0 24 24"
+    fill="currentColor"
+  >
+    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
+  </svg>
+);
+
+const XIcon = () => (
+  <svg
+    className="h-4 w-4 text-black dark:text-white"
+    viewBox="0 0 24 24"
+    fill="currentColor"
+  >
+    <path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z" />
+  </svg>
+);
+
+const FacebookIcon = () => (
+  <svg
+    className="h-4 w-4 text-blue-600"
+    viewBox="0 0 24 24"
+    fill="currentColor"
+  >
+    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+  </svg>
+);
+
+const InstagramIcon = () => (
+  <svg
+    className="h-4 w-4 text-pink-600"
+    viewBox="0 0 24 24"
+    fill="currentColor"
+  >
+    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+  </svg>
+);
 
 interface SidePanelProps {
   isOpen: boolean;
@@ -25,24 +66,25 @@ interface SidePanelProps {
 export function SidePanel({ isOpen, onClose }: SidePanelProps) {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  const { user, setUser } = useUserStore();
-  const [isLoading, setIsLoading] = useState(false);
+  const { user } = useUserStore();
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  const handleSave = async () => {
-    if (!user) return;
-
-    setIsLoading(true);
-    try {
-      const updatedUser = await updateUser(user);
-      setUser(updatedUser);
-    } catch (error) {
-      console.error('Failed to save user info:', error);
-    } finally {
-      setIsLoading(false);
+  const getPlatformIcon = (platform: string) => {
+    switch (platform.toLowerCase()) {
+      case 'linkedin':
+        return <LinkedInIcon />;
+      case 'twitter':
+      case 'x':
+        return <XIcon />;
+      case 'facebook':
+        return <FacebookIcon />;
+      case 'instagram':
+        return <InstagramIcon />;
+      default:
+        return null;
     }
   };
 
@@ -52,111 +94,80 @@ export function SidePanel({ isOpen, onClose }: SidePanelProps) {
 
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
-      <SheetContent className="w-[400px] sm:w-[540px]">
-        <SheetHeader>
+      <SheetContent className="w-[400px] sm:w-[540px] flex flex-col">
+        <SheetHeader className="flex-shrink-0">
           <SheetTitle className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500">
             Settings
           </SheetTitle>
         </SheetHeader>
 
-        <div className="py-6 space-y-6">
+        <div className="flex-1 overflow-y-auto py-6 space-y-8 pr-2">
           {/* Theme Toggle */}
           <div className="space-y-2">
             <Label className="text-base font-medium">Theme</Label>
             <div className="flex items-center space-x-2 p-3 rounded-lg border bg-gradient-to-r from-yellow-400/5 to-orange-500/5">
               <Sun className="h-4 w-4 text-yellow-500" />
-              <Switch
+              <BaseToggle
+                label=""
                 checked={theme === 'dark'}
                 onCheckedChange={(checked) =>
                   setTheme(checked ? 'dark' : 'light')
                 }
+                className="border-0 bg-transparent p-0"
               />
               <Moon className="h-4 w-4 text-blue-400" />
             </div>
           </div>
 
-          {/* User Info */}
-          <div className="space-y-4">
-            <Label className="text-base font-medium">User Information</Label>
+          {/* Subtle Separator */}
+          <div className="border-t border-gradient-to-r from-transparent via-border to-transparent opacity-50" />
 
-            <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
-              <div className="relative">
-                <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="username"
-                  placeholder="Enter username"
-                  value={user.name ?? ''}
-                  onChange={(e) =>
-                    setUser({
-                      name: e.target.value,
-                    })
-                  }
-                  className="pl-10 focus:ring-2 focus:ring-orange-400"
-                />
-              </div>
-            </div>
+          {/* User Profile Component */}
+          <UserProfile />
 
-            <div className="space-y-2">
-              <Label htmlFor="timezone">Timezone</Label>
-              <Input
-                id="timezone"
-                placeholder="e.g., America/New_York"
-                value={user.timezone}
-                onChange={(e) =>
-                  setUser({
-                    timezone: e.target.value,
-                  })
-                }
-                className="focus:ring-2 focus:ring-orange-400"
-              />
-            </div>
-          </div>
+          {/* Subtle Separator */}
+          <div className="border-t border-gradient-to-r from-transparent via-border to-transparent opacity-50" />
 
           {/* Platform Access */}
           <div className="space-y-4">
             <Label className="text-base font-medium">Platform Access</Label>
-
             <div className="space-y-3">
-              <div className="flex items-center justify-between p-3 rounded-lg border bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-950/20 dark:to-blue-900/20">
-                <div className="flex items-center space-x-2">
-                  <Linkedin className="h-4 w-4 text-blue-600" />
-                  <Label htmlFor="linkedin">LinkedIn</Label>
-                </div>
-                <Switch
-                  id="linkedin"
-                  disabled
-                  className="data-[state=checked]:bg-blue-600"
+              {Platforms.map((platform) => (
+                <BaseToggle
+                  key={platform}
+                  label={getPlatformDisplayName(platform)}
+                  checked={
+                    user.socialAccounts?.some(
+                      (account) =>
+                        account.platform === platform && account.isActive
+                    ) || false
+                  }
+                  onCheckedChange={() => {
+                    // Handle platform toggle logic here
+                    console.log(`Toggle ${platform}`);
+                  }}
+                  icon={getPlatformIcon(platform)}
+                  disabled={
+                    user.socialAccounts?.some(
+                      (account) =>
+                        account.platform === platform && account.isActive
+                    ) || false
+                  }
+                  id={platform.toLowerCase()}
                 />
-              </div>
-
-              <div className="flex items-center justify-between p-3 rounded-lg border bg-gradient-to-r from-blue-50 to-slate-100 dark:from-slate-950/20 dark:to-slate-900/20">
-                <div className="flex items-center space-x-2">
-                  <Twitter className="h-4 w-4 text-slate-700 dark:text-slate-300" />
-                  <Label htmlFor="x">X (Twitter)</Label>
-                </div>
-                <Switch
-                  id="x"
-                  disabled
-                  className="data-[state=checked]:bg-slate-700"
-                />
-              </div>
+              ))}
             </div>
           </div>
 
-          <Button
-            onClick={handleSave}
-            className="w-full bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-white font-medium shadow-lg"
-            disabled={isLoading}
-          >
-            {isLoading ? 'Saving...' : 'Save Changes'}
-          </Button>
+          {/* Subtle Separator */}
+          <div className="border-t border-gradient-to-r from-transparent via-border to-transparent opacity-50" />
 
+          {/* Logout Button */}
           <form action={logout}>
             <Button
               type="submit"
               variant="outline"
-              className="w-full mt-4 border-red-500 text-red-500 hover:bg-red-500 hover:text-white"
+              className="w-full border-red-500 text-red-500 hover:bg-red-500 hover:text-white bg-transparent"
             >
               Logout
             </Button>
