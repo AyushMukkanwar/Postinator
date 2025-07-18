@@ -51,7 +51,7 @@ export function OnboardingModal() {
 
     setIsLoading(true);
     try {
-      const updatedUser = await updateUser(user);
+      const updatedUser = await updateUser(user.id, user);
       setUser(updatedUser);
       setIsOpen(false);
     } catch (error) {
