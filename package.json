@@ -24,7 +24,7 @@
     "test:coverage": "turbo run test:coverage",
     "prepare": "husky",
     "lint-staged": "lint-staged",
-    "pre-commit": "lint-staged && turbo lint"
+    "pre-commit": "lint-staged && turbo lint && turbo typecheck"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [
