@@ -5,7 +5,7 @@ export type Platform = (typeof Platforms)[number];
 export const getPlatformDisplayName = (platform: Platform): string => {
   const displayNames: Record<Platform, string> = {
     LINKEDIN: 'LinkedIn',
-    TWITTER: 'Twitter',
+    TWITTER: 'X',
     INSTAGRAM: 'Instagram',
   };
   return displayNames[platform];

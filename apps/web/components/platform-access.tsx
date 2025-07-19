@@ -25,8 +25,12 @@ export function PlatformAccess() {
               ) || false
             }
             onCheckedChange={() => {
-              // Handle platform toggle logic here
-              console.log(`Toggle ${platform}`);
+              if (platform === 'TWITTER') {
+                window.location.href = '/twitter';
+              } else {
+                // Handle other platform toggle logic here
+                console.log(`Toggle ${platform}`);
+              }
             }}
             icon={getPlatformIcon(platform)}
             disabled={
