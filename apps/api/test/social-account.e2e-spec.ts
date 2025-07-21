@@ -251,6 +251,89 @@ describe('SocialAccount e2e tests', () => {
       .expect(403);
   });
 
+  it('/social-account/:id PATCH - should update isActive field', async () => {
+    const socialAccount = await prisma.socialAccount.create({
+      data: {
+        platform: Platform.TWITTER,
+        platformId: 'twitter_active_test',
+        username: 'userA_twitter_active',
+        accessToken: 'test-token',
+        isActive: true,
+        user: {
+          connect: {
+            id: userA.id,
+          },
+        },
+      },
+    });
+
+    const updateDto = {
+      isActive: false,
+    };
+
+    const response = await request(app.getHttpServer())
+      .patch(`/social-account/${socialAccount.id}`)
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send(updateDto)
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      id: socialAccount.id,
+      isActive: false,
+    });
+  });
+
+  it('/social-account POST - should return 400 for invalid input (missing fields)', async () => {
+    await request(app.getHttpServer())
+      .post('/social-account')
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({
+        // Missing userId, platform, platformId, username, accessToken
+        isActive: true,
+      })
+      .expect(400);
+  });
+
+  it('/social-account POST - should return 400 for invalid input (invalid platform enum)', async () => {
+    await request(app.getHttpServer())
+      .post('/social-account')
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({
+        userId: userA.id,
+        platform: 'INVALID_PLATFORM', // Invalid enum value
+        platformId: 'test_id',
+        username: 'test_user',
+        accessToken: 'test_token',
+        isActive: true,
+      })
+      .expect(400);
+  });
+
+  it('/social-account/:id PATCH - should return 400 for invalid input (invalid isActive type)', async () => {
+    const socialAccount = await prisma.socialAccount.create({
+      data: {
+        platform: Platform.TWITTER,
+        platformId: 'twitter_patch_invalid_type',
+        username: 'userA_patch_invalid_type',
+        accessToken: 'test-token',
+        isActive: true,
+        user: {
+          connect: {
+            id: userA.id,
+          },
+        },
+      },
+    });
+
+    await request(app.getHttpServer())
+      .patch(`/social-account/${socialAccount.id}`)
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({
+        isActive: 'not_a_boolean', // Invalid type
+      })
+      .expect(400);
+  });
+
   it('/social-account/:id DELETE - should delete social account by ID', async () => {
     const socialAccount = await prisma.socialAccount.create({
       data: {
