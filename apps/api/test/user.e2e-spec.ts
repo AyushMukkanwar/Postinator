@@ -12,7 +12,7 @@ describe('User e2e tests', () => {
   let app: INestApplication;
   let prisma: PrismaService;
   let dbContainer: DatabaseTestContainer;
-  const token = getTestAccessToken();
+  let token: string;
 
   beforeAll(async () => {
     // Start database container
@@ -57,6 +57,7 @@ describe('User e2e tests', () => {
 
   beforeEach(async () => {
     await prisma.user.deleteMany({});
+    token = getTestAccessToken('test-user-id', 'test@example.com');
   });
 
   it('/users POST - should create a user', async () => {
@@ -210,7 +211,7 @@ describe('User e2e tests', () => {
         name: 'Single User',
       },
     });
-    const token = getTestAccessToken(user.email);
+    const token = getTestAccessToken(user.id, user.email);
 
     const response = await request(app.getHttpServer())
       .get(`/users/${user.id}`)
@@ -245,7 +246,7 @@ describe('User e2e tests', () => {
       },
     });
 
-    const tokenA = getTestAccessToken(userA.email);
+    const tokenA = getTestAccessToken(userA.id, userA.email);
 
     await request(app.getHttpServer())
       .get(`/users/${userB.id}`)
@@ -260,7 +261,7 @@ describe('User e2e tests', () => {
         name: 'Social User',
       },
     });
-    const token = getTestAccessToken(user.email);
+    const token = getTestAccessToken(user.id, user.email);
 
     const response = await request(app.getHttpServer())
       .get(`/users/${user.id}/social-accounts`)
@@ -287,7 +288,7 @@ describe('User e2e tests', () => {
       },
     });
 
-    const tokenA = getTestAccessToken(userA.email);
+    const tokenA = getTestAccessToken(userA.id, userA.email);
 
     await request(app.getHttpServer())
       .get(`/users/${userB.id}/social-accounts`)
@@ -302,7 +303,7 @@ describe('User e2e tests', () => {
         name: 'Posts User',
       },
     });
-    const token = getTestAccessToken(user.email);
+    const token = getTestAccessToken(user.id, user.email);
 
     const response = await request(app.getHttpServer())
       .get(`/users/${user.id}/recent-posts?limit=5`)
@@ -329,7 +330,7 @@ describe('User e2e tests', () => {
       },
     });
 
-    const tokenA = getTestAccessToken(userA.email);
+    const tokenA = getTestAccessToken(userA.id, userA.email);
 
     await request(app.getHttpServer())
       .get(`/users/${userB.id}/recent-posts?limit=5`)
@@ -344,7 +345,7 @@ describe('User e2e tests', () => {
         name: 'Find Me',
       },
     });
-    const token = getTestAccessToken(user.email);
+    const token = getTestAccessToken(user.id, user.email);
 
     const response = await request(app.getHttpServer())
       .get(`/users/email/${user.email}`)
@@ -359,7 +360,7 @@ describe('User e2e tests', () => {
 
   it('/users/email/:email GET - should return 404 for non-existent email', async () => {
     const nonexistentEmail = 'nonexistent@test.com';
-    const token = getTestAccessToken(nonexistentEmail);
+    const token = getTestAccessToken('non-existent-id', nonexistentEmail);
 
     await request(app.getHttpServer())
       .get(`/users/email/${nonexistentEmail}`)
@@ -381,7 +382,7 @@ describe('User e2e tests', () => {
       },
     });
 
-    const tokenA = getTestAccessToken(userA.email);
+    const tokenA = getTestAccessToken(userA.id, userA.email);
 
     await request(app.getHttpServer())
       .get(`/users/email/${userB.email}`)
@@ -397,7 +398,7 @@ describe('User e2e tests', () => {
       },
     });
 
-    const token = getTestAccessToken(user.email);
+    const token = getTestAccessToken(user.id, user.email);
 
     const updateDto = {
       name: 'Updated Name',
@@ -441,7 +442,7 @@ describe('User e2e tests', () => {
       },
     });
 
-    const tokenA = getTestAccessToken(userA.email);
+    const tokenA = getTestAccessToken(userA.id, userA.email);
 
     await request(app.getHttpServer())
       .put(`/users/${userB.id}`)
@@ -459,7 +460,7 @@ describe('User e2e tests', () => {
         name: 'Delete User',
       },
     });
-    const token = getTestAccessToken(user.email);
+    const token = getTestAccessToken(user.id, user.email);
 
     const response = await request(app.getHttpServer())
       .delete(`/users/${user.id}`)
@@ -499,7 +500,7 @@ describe('User e2e tests', () => {
       },
     });
 
-    const tokenA = getTestAccessToken(userA.email);
+    const tokenA = getTestAccessToken(userA.id, userA.email);
 
     await request(app.getHttpServer())
       .delete(`/users/${userB.id}`)

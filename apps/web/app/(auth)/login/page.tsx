@@ -51,7 +51,6 @@ export default function LoginPage() {
         name: data.user.user_metadata?.full_name,
         avatar: data.user.user_metadata?.avatar_url,
       });
-      console.log('Logged in successfully:', data);
       router.push('/dashboard');
     }
   };

@@ -1,7 +1,6 @@
-// src/database/repositories/social-account.repository.ts
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { SocialAccount, Prisma, Platform } from 'generated/prisma';
+import { SocialAccount, Prisma } from 'generated/prisma';
 import { BaseRepository } from './base.repository';
 
 export interface ISocialAccountRepository
@@ -11,30 +10,19 @@ export interface ISocialAccountRepository
     Prisma.SocialAccountUpdateInput,
     Prisma.SocialAccountWhereInput
   > {
-  findByUserAndPlatform(
-    userId: string,
-    platform: Platform
+  findUnique(
+    where: Prisma.SocialAccountWhereUniqueInput
   ): Promise<SocialAccount | null>;
-  findActiveByUser(userId: string): Promise<SocialAccount[]>;
-  findByPlatformId(
-    platformId: string,
-    platform: Platform
-  ): Promise<SocialAccount | null>;
-  updateTokens(
-    id: string,
-    accessToken: string,
-    refreshToken?: string,
-    expiresAt?: Date
-  ): Promise<SocialAccount>;
-  deactivateAccount(id: string): Promise<SocialAccount>;
 }
 
 @Injectable()
 export class SocialAccountRepository implements ISocialAccountRepository {
-  constructor(private prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async create(data: Prisma.SocialAccountCreateInput): Promise<SocialAccount> {
-    return this.prisma.socialAccount.create({ data });
+    return this.prisma.socialAccount.create({
+      data,
+    });
   }
 
   async findById(id: string): Promise<SocialAccount | null> {
@@ -46,62 +34,21 @@ export class SocialAccountRepository implements ISocialAccountRepository {
     });
   }
 
-  async findByUserAndPlatform(
-    userId: string,
-    platform: Platform
+  async findUnique(
+    where: Prisma.SocialAccountWhereUniqueInput
   ): Promise<SocialAccount | null> {
     return this.prisma.socialAccount.findUnique({
-      where: {
-        userId_platform: {
-          userId,
-          platform,
-        },
-      },
+      where,
     });
   }
 
-  async findActiveByUser(userId: string): Promise<SocialAccount[]> {
-    return this.prisma.socialAccount.findMany({
-      where: {
-        userId,
-        isActive: true,
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-  }
-
-  async findByPlatformId(
-    platformId: string,
-    platform: Platform
-  ): Promise<SocialAccount | null> {
-    return this.prisma.socialAccount.findFirst({
-      where: {
-        platformId,
-        platform,
-      },
-    });
-  }
-
-  async updateTokens(
+  async update(
     id: string,
-    accessToken: string,
-    refreshToken?: string,
-    expiresAt?: Date
+    data: Prisma.SocialAccountUpdateInput
   ): Promise<SocialAccount> {
     return this.prisma.socialAccount.update({
       where: { id },
-      data: {
-        accessToken,
-        refreshToken,
-        expiresAt,
-      },
-    });
-  }
-
-  async deactivateAccount(id: string): Promise<SocialAccount> {
-    return this.prisma.socialAccount.update({
-      where: { id },
-      data: { isActive: false },
+      data,
     });
   }
 
@@ -117,16 +64,6 @@ export class SocialAccountRepository implements ISocialAccountRepository {
       take,
       where,
       orderBy,
-    });
-  }
-
-  async update(
-    id: string,
-    data: Prisma.SocialAccountUpdateInput
-  ): Promise<SocialAccount> {
-    return this.prisma.socialAccount.update({
-      where: { id },
-      data,
     });
   }
 

@@ -32,6 +32,7 @@ import { User } from 'generated/prisma';
 import { JwtAuthGuard } from 'src/auth/guards/jwt.auth.guard';
 import { Throttle } from '@nestjs/throttler';
 import { ResourceOwnerGuard } from 'src/auth/guards/resource-owner.guard';
+import { ResourceParamName } from 'src/auth/decorators/resource-param.decorator';
 
 @ApiTags('users')
 @UseGuards(JwtAuthGuard)
@@ -152,6 +153,7 @@ export class UserController {
 
   @Get(':id')
   @UseGuards(ResourceOwnerGuard)
+  @ResourceParamName('id')
   @ApiOperation({ summary: 'Get user by ID' })
   @ApiResponse({
     status: 200,
@@ -166,6 +168,7 @@ export class UserController {
 
   @Get(':id/social-accounts')
   @UseGuards(ResourceOwnerGuard)
+  @ResourceParamName('id')
   @ApiOperation({ summary: 'Get user with social accounts' })
   @ApiResponse({
     status: 200,
@@ -180,6 +183,7 @@ export class UserController {
 
   @Get(':id/recent-posts')
   @UseGuards(ResourceOwnerGuard)
+  @ResourceParamName('id')
   @ApiOperation({ summary: 'Get user with recent posts' })
   @ApiResponse({
     status: 200,
@@ -204,6 +208,7 @@ export class UserController {
 
   @Get('email/:email')
   @UseGuards(ResourceOwnerGuard)
+  @ResourceParamName('email')
   @ApiOperation({ summary: 'Get user by email' })
   @ApiResponse({
     status: 200,
@@ -213,9 +218,6 @@ export class UserController {
   @ApiResponse({ status: 404, description: 'User not found' })
   @ApiParam({ name: 'email', type: 'string', description: 'User email' })
   async getUserByEmail(@Param('email') email: string): Promise<User | null> {
-    console.log('[Controller] GET /users/email/:email called');
-    console.log('[Controller] Email param received:', email);
-
     try {
       const user = await this.userService.getUserByEmail(email);
 
@@ -223,17 +225,15 @@ export class UserController {
         console.warn('[Controller] No user found for email:', email);
         return null; // or throw new NotFoundException('User not found');
       }
-
-      console.log('[Controller] User found:', user.id); // or log more fields if safe
       return user;
     } catch (error) {
-      console.error('[Controller] Error in getUserByEmail:', error);
-      throw error; // or wrap in InternalServerErrorException if not already handled
+      throw error; // Re-throw the error to be handled by NestJS's exception filters
     }
   }
 
   @Put(':id')
   @UseGuards(ResourceOwnerGuard)
+  @ResourceParamName('id')
   @Throttle({ default: { limit: 10, ttl: 60000 } })
   @ApiOperation({ summary: 'Update user by ID' })
   @ApiResponse({
@@ -253,6 +253,7 @@ export class UserController {
 
   @Delete(':id')
   @UseGuards(ResourceOwnerGuard)
+  @ResourceParamName('id')
   @Throttle({ strict: { limit: 3, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Delete user by ID' })
