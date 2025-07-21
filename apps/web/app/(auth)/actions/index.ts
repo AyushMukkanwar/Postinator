@@ -71,7 +71,6 @@ async function createUserInBackendWithAuth(
 
     if (getUserResponse.ok) {
       const existingUser = await getUserResponse.json();
-      console.log('User already exists in backend:', existingUser);
       return existingUser;
     }
 
@@ -90,7 +89,6 @@ async function createUserInBackendWithAuth(
     }
 
     const createdUser = await response.json();
-    console.log('User created in backend:', createdUser);
     return createdUser;
   } catch (error) {
     console.error('Error calling backend:', error);

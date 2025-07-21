@@ -26,8 +26,6 @@ export function NavBar({ onMenuClick }: NavBarProps) {
 
   const isUserLoggedIn = !!email; // Check if user exists by email
 
-  console.log('user = ', user);
-
   // Home page navbar - simplified version
   if (isHomePage) {
     return (
