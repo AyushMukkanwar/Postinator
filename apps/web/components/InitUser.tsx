@@ -15,8 +15,10 @@ export default function InitUser() {
         const email = (await checkAuth()).email;
         if (!email) return;
 
-        const user: User = await getUserByEmail(email);
-        setUser(user);
+        const user: User | null = await getUserByEmail(email);
+        if (user) {
+          setUser(user);
+        }
       } catch (error) {
         console.error('Failed to fetch user:', error);
       }

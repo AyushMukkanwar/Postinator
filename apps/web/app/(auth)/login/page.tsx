@@ -23,6 +23,7 @@ import { Separator } from '@/components/ui/separator';
 import { Mail, Lock, AlertCircle } from 'lucide-react';
 
 export default function LoginPage() {
+  console.log('LoginPage component rendering...');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const router = useRouter();
@@ -31,22 +32,28 @@ export default function LoginPage() {
   const [origin, setOrigin] = useState('');
 
   useEffect(() => {
-    setOrigin(window.location.origin);
+    if (typeof window !== 'undefined') {
+      setOrigin(window.location.origin);
+      console.log('useEffect: origin set to', window.location.origin);
+    }
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    console.log('handleSubmit: Attempting to sign in with email:', email);
     const { data, error: signInError } = await signInWithEmailAndPassword({
       email,
       password,
     }); // Renamed error to avoid conflict
 
     if (signInError) {
-      console.error('Error logging in:', signInError);
+      console.error('handleSubmit: Error logging in:', signInError);
       setError(`Login failed: ${signInError.message}`);
     } else if (data.user) {
+      console.log('handleSubmit: User signed in successfully:', data.user.id);
       await handleAfterSignIn({
+        supabaseId: data.user.id,
         email: data.user.email!,
         name: data.user.user_metadata?.full_name,
         avatar: data.user.user_metadata?.avatar_url,
@@ -56,7 +63,16 @@ export default function LoginPage() {
   };
 
   const handleGoogleSignIn = async () => {
-    if (!origin) return;
+    console.log(
+      'handleGoogleSignIn: Attempting Google Sign-In. Current origin:',
+      origin
+    );
+    if (!origin) {
+      console.warn(
+        'handleGoogleSignIn: Origin not available, cannot proceed with Google Sign-In.'
+      );
+      return;
+    }
     setError('');
     try {
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
@@ -67,11 +83,18 @@ export default function LoginPage() {
       });
 
       if (oauthError) {
-        console.error('Google Sign-In Error:', oauthError);
+        console.error('handleGoogleSignIn: Google Sign-In Error:', oauthError);
         setError(`Google Sign-In failed: ${oauthError.message}`);
+      } else {
+        console.log(
+          'handleGoogleSignIn: Google Sign-In initiated successfully.'
+        );
       }
     } catch (catchedError: unknown) {
-      console.error('Unexpected Google Sign-In Error:', catchedError);
+      console.error(
+        'handleGoogleSignIn: Unexpected Google Sign-In Error:',
+        catchedError
+      );
       setError(
         `An unexpected error occurred: ${
           catchedError instanceof Error ? catchedError.message : 'Unknown error'

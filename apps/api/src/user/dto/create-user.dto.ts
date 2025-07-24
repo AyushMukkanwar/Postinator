@@ -3,6 +3,13 @@ import { IsEmail, IsString, IsOptional } from 'class-validator';
 
 export class CreateUserDto {
   @ApiProperty({
+    description: 'Supabase user ID',
+    example: 'a1b2c3d4-e5f6-7890-1234-567890abcdef',
+  })
+  @IsString()
+  supabaseId: string;
+
+  @ApiProperty({
     description: 'User email address',
     example: 'user@example.com',
   })

@@ -3,6 +3,7 @@ import type { Post } from './postStatus';
 
 export interface User {
   id: string;
+  supabaseId: string;
   email: string;
   name?: string | null;
   avatar?: string | null;

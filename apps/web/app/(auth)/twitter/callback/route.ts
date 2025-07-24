@@ -93,7 +93,7 @@ export async function GET(req: NextRequest) {
     const tokens: TwitterOAuthTokenResponse = await tokenResponse.json();
 
     // Store tokens securely (in DB, encrypted cookies, etc.)
-    console.log('Access token received:', tokens.access_token);
+    console.log('Access token received:', tokens);
     if (tokens.refresh_token) {
       console.log('Refresh token received (offline.access scope was used)');
     }

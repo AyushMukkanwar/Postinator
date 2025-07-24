@@ -35,7 +35,7 @@ export class ResourceOwnerGuard implements CanActivate {
     }
 
     const actorUserId = currentUser.sub; // Use user ID from JWT
-    let resourceUserId: string | undefined;
+    let resourceUserId: string | null;
 
     const paramName = this.reflector.get<string>(
       'resourceParamName',
@@ -71,18 +71,18 @@ export class ResourceOwnerGuard implements CanActivate {
           resourceUserId = socialAccount.userId;
         } else {
           // For user resources, the resource ID is the user ID
-          resourceUserId = resourceId;
           const resourceUser = await this.userService.getUserById(resourceId);
           if (!resourceUser) {
             throw new NotFoundException('User not found');
           }
+          resourceUserId = resourceUser.supabaseId;
         }
       } else if (paramName === 'email') {
         const resourceUser = await this.userService.getUserByEmail(resourceId);
         if (!resourceUser) {
           throw new NotFoundException('User not found');
         }
-        resourceUserId = resourceUser.id;
+        resourceUserId = resourceUser.supabaseId;
       } else if (paramName === 'socialAccountId') {
         // For social account resources
         const socialAccount =
@@ -96,6 +96,9 @@ export class ResourceOwnerGuard implements CanActivate {
       }
 
       // Check if the actor owns the resource
+      console.log(
+        `[ResourceOwnerGuard] Actor ID: ${actorUserId}, Resource User ID: ${resourceUserId}`
+      );
       if (actorUserId !== resourceUserId) {
         throw new ForbiddenException('You can only access your own resources');
       }

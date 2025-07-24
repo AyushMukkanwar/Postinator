@@ -1,6 +1,6 @@
 import * as jwt from 'jsonwebtoken';
 
-export function getTestAccessToken(userId: string, email?: string) {
+export function getTestAccessToken(userId: string | null, email?: string) {
   const payload = {
     sub: userId, // Use the actual user ID, not hardcoded 'test-user-id'
     email: email || 'test@example.com',
