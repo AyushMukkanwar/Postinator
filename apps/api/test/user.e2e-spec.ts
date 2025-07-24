@@ -55,9 +55,12 @@ describe('User e2e tests', () => {
     console.log('🛑 afterAll: STOPPED DB container…');
   });
 
+  let testSupabaseId: string;
+
   beforeEach(async () => {
     await prisma.user.deleteMany({});
-    token = getTestAccessToken('test-user-id', 'test@example.com');
+    testSupabaseId = `test-supabase-id-${Date.now()}`;
+    token = getTestAccessToken(testSupabaseId, 'test@example.com');
   });
 
   it('/users POST - should create a user', async () => {
@@ -65,6 +68,7 @@ describe('User e2e tests', () => {
       .post('/users')
       .set('Authorization', `Bearer ${token}`)
       .send({
+        supabaseId: testSupabaseId,
         email: 'test@example.com',
         name: 'Test User',
         timezone: 'IST',
@@ -83,6 +87,7 @@ describe('User e2e tests', () => {
       .post('/users')
       .set('Authorization', `Bearer ${token}`)
       .send({
+        supabaseId: testSupabaseId,
         email: 'duplicate@example.com',
         name: 'First User',
       })
@@ -93,6 +98,7 @@ describe('User e2e tests', () => {
       .post('/users')
       .set('Authorization', `Bearer ${token}`)
       .send({
+        supabaseId: `another-${testSupabaseId}`,
         email: 'duplicate@example.com',
         name: 'Second User',
       })
@@ -207,11 +213,12 @@ describe('User e2e tests', () => {
   it('/users/:id GET - should return user by id', async () => {
     const user = await prisma.user.create({
       data: {
+        supabaseId: `test-supabase-id-${Date.now()}-single`,
         email: 'single@test.com',
         name: 'Single User',
       },
     });
-    const token = getTestAccessToken(user.id, user.email);
+    const token = getTestAccessToken(user.supabaseId, user.email);
 
     const response = await request(app.getHttpServer())
       .get(`/users/${user.id}`)
@@ -235,18 +242,20 @@ describe('User e2e tests', () => {
   it("/users/:id GET - should return 403 when user tries to get another user's data", async () => {
     const userA = await prisma.user.create({
       data: {
+        supabaseId: `test-supabase-id-${Date.now()}-A`,
         email: 'userA@test.com',
         name: 'User A',
       },
     });
     const userB = await prisma.user.create({
       data: {
+        supabaseId: `test-supabase-id-${Date.now()}-B`,
         email: 'userB@test.com',
         name: 'User B',
       },
     });
 
-    const tokenA = getTestAccessToken(userA.id, userA.email);
+    const tokenA = getTestAccessToken(userA.supabaseId, userA.email);
 
     await request(app.getHttpServer())
       .get(`/users/${userB.id}`)
@@ -257,11 +266,12 @@ describe('User e2e tests', () => {
   it('/users/:id/social-accounts GET - should return user with social accounts', async () => {
     const user = await prisma.user.create({
       data: {
+        supabaseId: `test-supabase-id-${Date.now()}-social`,
         email: 'social@test.com',
         name: 'Social User',
       },
     });
-    const token = getTestAccessToken(user.id, user.email);
+    const token = getTestAccessToken(user.supabaseId, user.email);
 
     const response = await request(app.getHttpServer())
       .get(`/users/${user.id}/social-accounts`)
@@ -277,18 +287,20 @@ describe('User e2e tests', () => {
   it("/users/:id/social-accounts GET - should return 403 when user tries to get another user's social accounts", async () => {
     const userA = await prisma.user.create({
       data: {
+        supabaseId: `test-supabase-id-${Date.now()}-social-A`,
         email: 'userA_social@test.com',
         name: 'User A Social',
       },
     });
     const userB = await prisma.user.create({
       data: {
+        supabaseId: `test-supabase-id-${Date.now()}-social-B`,
         email: 'userB_social@test.com',
         name: 'User B Social',
       },
     });
 
-    const tokenA = getTestAccessToken(userA.id, userA.email);
+    const tokenA = getTestAccessToken(userA.supabaseId, userA.email);
 
     await request(app.getHttpServer())
       .get(`/users/${userB.id}/social-accounts`)
@@ -299,11 +311,12 @@ describe('User e2e tests', () => {
   it('/users/:id/recent-posts GET - should return user with recent posts', async () => {
     const user = await prisma.user.create({
       data: {
+        supabaseId: `test-supabase-id-${Date.now()}-posts`,
         email: 'posts@test.com',
         name: 'Posts User',
       },
     });
-    const token = getTestAccessToken(user.id, user.email);
+    const token = getTestAccessToken(user.supabaseId, user.email);
 
     const response = await request(app.getHttpServer())
       .get(`/users/${user.id}/recent-posts?limit=5`)
@@ -319,18 +332,20 @@ describe('User e2e tests', () => {
   it("/users/:id/recent-posts GET - should return 403 when user tries to get another user's recent posts", async () => {
     const userA = await prisma.user.create({
       data: {
+        supabaseId: `test-supabase-id-${Date.now()}-posts-A`,
         email: 'userA_posts@test.com',
         name: 'User A Posts',
       },
     });
     const userB = await prisma.user.create({
       data: {
+        supabaseId: `test-supabase-id-${Date.now()}-posts-B`,
         email: 'userB_posts@test.com',
         name: 'User B Posts',
       },
     });
 
-    const tokenA = getTestAccessToken(userA.id, userA.email);
+    const tokenA = getTestAccessToken(userA.supabaseId, userA.email);
 
     await request(app.getHttpServer())
       .get(`/users/${userB.id}/recent-posts?limit=5`)
@@ -341,11 +356,12 @@ describe('User e2e tests', () => {
   it('/users/email/:email GET - should return user by email', async () => {
     const user = await prisma.user.create({
       data: {
+        supabaseId: `test-supabase-id-${Date.now()}-findme`,
         email: 'findme@test.com',
         name: 'Find Me',
       },
     });
-    const token = getTestAccessToken(user.id, user.email);
+    const token = getTestAccessToken(user.supabaseId, user.email);
 
     const response = await request(app.getHttpServer())
       .get(`/users/email/${user.email}`)
@@ -371,18 +387,20 @@ describe('User e2e tests', () => {
   it("/users/email/:email GET - should return 403 when user tries to get another user's data by email", async () => {
     const userA = await prisma.user.create({
       data: {
+        supabaseId: `test-supabase-id-${Date.now()}-email-A`,
         email: 'userA_email@test.com',
         name: 'User A Email',
       },
     });
     const userB = await prisma.user.create({
       data: {
+        supabaseId: `test-supabase-id-${Date.now()}-email-B`,
         email: 'userB_email@test.com',
         name: 'User B Email',
       },
     });
 
-    const tokenA = getTestAccessToken(userA.id, userA.email);
+    const tokenA = getTestAccessToken(userA.supabaseId, userA.email);
 
     await request(app.getHttpServer())
       .get(`/users/email/${userB.email}`)
@@ -393,12 +411,13 @@ describe('User e2e tests', () => {
   it('/users/:id PUT - should update user', async () => {
     const user = await prisma.user.create({
       data: {
+        supabaseId: `test-supabase-id-${Date.now()}-update`,
         email: 'update@test.com',
         name: 'Update User',
       },
     });
 
-    const token = getTestAccessToken(user.id, user.email);
+    const token = getTestAccessToken(user.supabaseId, user.email);
 
     const updateDto = {
       name: 'Updated Name',
@@ -431,18 +450,20 @@ describe('User e2e tests', () => {
   it("/users/:id PUT - should return 403 when user tries to update another user's data", async () => {
     const userA = await prisma.user.create({
       data: {
+        supabaseId: `test-supabase-id-${Date.now()}-update-A`,
         email: 'userA_update@test.com',
         name: 'User A Update',
       },
     });
     const userB = await prisma.user.create({
       data: {
+        supabaseId: `test-supabase-id-${Date.now()}-update-B`,
         email: 'userB_update@test.com',
         name: 'User B Update',
       },
     });
 
-    const tokenA = getTestAccessToken(userA.id, userA.email);
+    const tokenA = getTestAccessToken(userA.supabaseId, userA.email);
 
     await request(app.getHttpServer())
       .put(`/users/${userB.id}`)
@@ -456,11 +477,12 @@ describe('User e2e tests', () => {
   it('/users/:id DELETE - should delete user', async () => {
     const user = await prisma.user.create({
       data: {
+        supabaseId: `test-supabase-id-${Date.now()}-delete`,
         email: 'delete@test.com',
         name: 'Delete User',
       },
     });
-    const token = getTestAccessToken(user.id, user.email);
+    const token = getTestAccessToken(user.supabaseId, user.email);
 
     const response = await request(app.getHttpServer())
       .delete(`/users/${user.id}`)
@@ -489,18 +511,20 @@ describe('User e2e tests', () => {
   it("/users/:id DELETE - should return 403 when user tries to delete another user's data", async () => {
     const userA = await prisma.user.create({
       data: {
+        supabaseId: 'k1l2m3n4-o5p6-7890-1234-567890abcdef',
         email: 'userA_delete@test.com',
         name: 'User A Delete',
       },
     });
     const userB = await prisma.user.create({
       data: {
+        supabaseId: 'l1m2n3o4-p5q6-7890-1234-567890abcdef',
         email: 'userB_delete@test.com',
         name: 'User B Delete',
       },
     });
 
-    const tokenA = getTestAccessToken(userA.id, userA.email);
+    const tokenA = getTestAccessToken(userA.supabaseId, userA.email);
 
     await request(app.getHttpServer())
       .delete(`/users/${userB.id}`)

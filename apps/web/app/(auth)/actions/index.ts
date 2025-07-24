@@ -41,6 +41,7 @@ async function createUserInBackendWithAuth(
     email: string;
     name: string;
     avatar: string;
+    supabaseId: string;
   },
   accessToken?: string
 ) {
@@ -97,6 +98,7 @@ async function createUserInBackendWithAuth(
 }
 
 export async function handleAfterSignIn(user: {
+  supabaseId: string;
   email: string;
   name?: string;
   avatar?: string;
@@ -111,6 +113,7 @@ export async function handleAfterSignIn(user: {
 
   return await createUserInBackendWithAuth(
     {
+      supabaseId: user.supabaseId,
       email: user.email,
       name: user.name || 'Anonymous User',
       avatar: user.avatar || '',
@@ -128,7 +131,6 @@ export async function logout() {
     redirect('/error');
   }
 
-  revalidatePath('/', 'layout');
   redirect('/login');
 }
 

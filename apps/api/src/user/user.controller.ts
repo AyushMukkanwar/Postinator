@@ -12,6 +12,8 @@ import {
   ParseIntPipe,
   DefaultValuePipe,
   UseGuards,
+  Req,
+  NotFoundException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -49,8 +51,12 @@ export class UserController {
     type: UserEntity,
   })
   @ApiResponse({ status: 400, description: 'Bad request' })
-  async createUser(@Body() createUserDto: CreateUserDto): Promise<User> {
-    return this.userService.createUser(createUserDto);
+  async createUser(
+    @Req() req,
+    @Body() createUserDto: CreateUserDto
+  ): Promise<User> {
+    const supabaseId = req.user.sub;
+    return this.userService.createUser({ ...createUserDto, supabaseId });
   }
 
   @Get()
@@ -218,17 +224,11 @@ export class UserController {
   @ApiResponse({ status: 404, description: 'User not found' })
   @ApiParam({ name: 'email', type: 'string', description: 'User email' })
   async getUserByEmail(@Param('email') email: string): Promise<User | null> {
-    try {
-      const user = await this.userService.getUserByEmail(email);
-
-      if (!user) {
-        console.warn('[Controller] No user found for email:', email);
-        return null; // or throw new NotFoundException('User not found');
-      }
-      return user;
-    } catch (error) {
-      throw error; // Re-throw the error to be handled by NestJS's exception filters
+    const user = await this.userService.getUserByEmail(email);
+    if (!user) {
+      throw new NotFoundException(`User with email ${email} not found`);
     }
+    return user;
   }
 
   @Put(':id')
