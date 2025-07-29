@@ -19,8 +19,6 @@ async function bootstrap() {
     credentials: true, // Allow cookies/credentials if needed
   });
 
-  app.useGlobalFilters(new PrismaExceptionFilter());
-
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true, // Automatically remove non-whitelisted properties

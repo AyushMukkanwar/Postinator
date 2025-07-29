@@ -12,7 +12,6 @@ import {
   ParseIntPipe,
   DefaultValuePipe,
   UseGuards,
-  Req,
   NotFoundException,
 } from '@nestjs/common';
 import {
@@ -30,11 +29,12 @@ import {
   GetUsersQueryDto,
   UserEntity,
 } from './dto';
-import { User } from 'generated/prisma';
+import { User as UserModel } from 'generated/prisma';
 import { JwtAuthGuard } from 'src/auth/guards/jwt.auth.guard';
 import { Throttle } from '@nestjs/throttler';
 import { ResourceOwnerGuard } from 'src/auth/guards/resource-owner.guard';
 import { ResourceParamName } from 'src/auth/decorators/resource-param.decorator';
+import { User } from 'src/auth/decorators/user.decorator';
 
 @ApiTags('users')
 @UseGuards(JwtAuthGuard)
@@ -52,10 +52,10 @@ export class UserController {
   })
   @ApiResponse({ status: 400, description: 'Bad request' })
   async createUser(
-    @Req() req,
+    @User() user: UserModel,
     @Body() createUserDto: CreateUserDto
-  ): Promise<User> {
-    const supabaseId = req.user.sub;
+  ): Promise<UserModel> {
+    const supabaseId = user.supabaseId;
     return this.userService.createUser({ ...createUserDto, supabaseId });
   }
 
@@ -98,7 +98,7 @@ export class UserController {
     enum: ['asc', 'desc'],
     description: 'Sort order',
   })
-  async getUsers(@Query() query: GetUsersQueryDto): Promise<User[]> {
+  async getUsers(@Query() query: GetUsersQueryDto): Promise<UserModel[]> {
     const { skip, take, search, sortBy, sortOrder } = query;
 
     const params: {
@@ -168,7 +168,7 @@ export class UserController {
   })
   @ApiResponse({ status: 404, description: 'User not found' })
   @ApiParam({ name: 'id', type: 'string', description: 'User ID' })
-  async getUserById(@Param('id') id: string): Promise<User> {
+  async getUserById(@Param('id') id: string): Promise<UserModel> {
     return this.userService.getUserById(id);
   }
 
@@ -183,7 +183,7 @@ export class UserController {
   })
   @ApiResponse({ status: 404, description: 'User not found' })
   @ApiParam({ name: 'id', type: 'string', description: 'User ID' })
-  async getUserWithSocialAccounts(@Param('id') id: string): Promise<User> {
+  async getUserWithSocialAccounts(@Param('id') id: string): Promise<UserModel> {
     return this.userService.getUserWithSocialAccounts(id);
   }
 
@@ -208,7 +208,7 @@ export class UserController {
   async getUserWithRecentPosts(
     @Param('id') id: string,
     @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number
-  ): Promise<User> {
+  ): Promise<UserModel> {
     return this.userService.getUserWithRecentPosts(id, limit);
   }
 
@@ -223,8 +223,10 @@ export class UserController {
   })
   @ApiResponse({ status: 404, description: 'User not found' })
   @ApiParam({ name: 'email', type: 'string', description: 'User email' })
-  async getUserByEmail(@Param('email') email: string): Promise<User | null> {
-    const user = await this.userService.getUserByEmail(email);
+  async getUserByEmail(
+    @Param('email') email: string
+  ): Promise<UserModel | null> {
+    const user = await this.userService.getUserByEmailWithSocialAccounts(email);
     if (!user) {
       throw new NotFoundException(`User with email ${email} not found`);
     }
@@ -247,7 +249,7 @@ export class UserController {
   async updateUser(
     @Param('id') id: string,
     @Body() updateUserDto: UpdateUserDto
-  ): Promise<User> {
+  ): Promise<UserModel> {
     return this.userService.updateUser(id, updateUserDto);
   }
 
@@ -264,7 +266,7 @@ export class UserController {
   })
   @ApiResponse({ status: 404, description: 'User not found' })
   @ApiParam({ name: 'id', type: 'string', description: 'User ID' })
-  async deleteUser(@Param('id') id: string): Promise<User> {
+  async deleteUser(@Param('id') id: string): Promise<UserModel> {
     return this.userService.deleteUser(id);
   }
 }

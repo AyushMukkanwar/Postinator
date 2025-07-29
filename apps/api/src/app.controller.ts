@@ -1,13 +1,8 @@
-import { Controller, Get, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, UseGuards } from '@nestjs/common';
 import { AppService } from './app.service';
 import { JwtAuthGuard } from './auth/guards/jwt.auth.guard';
-import { Request } from 'express';
-
-interface AuthenticatedRequest extends Request {
-  user?: {
-    email: string;
-  };
-}
+import { User } from './auth/decorators/user.decorator';
+import { User as UserModel } from 'generated/prisma';
 
 @Controller()
 export class AppController {
@@ -20,10 +15,10 @@ export class AppController {
 
   @Get('/protected')
   @UseGuards(JwtAuthGuard)
-  protected(@Req() req: AuthenticatedRequest) {
+  protected(@User() user: UserModel) {
     return {
       message: 'AuthGuard works 🎉 from Turborepo API',
-      authenticated_user: req.user,
+      authenticated_user: user,
     };
   }
 }

@@ -52,12 +52,7 @@ export default function LoginPage() {
       setError(`Login failed: ${signInError.message}`);
     } else if (data.user) {
       console.log('handleSubmit: User signed in successfully:', data.user.id);
-      await handleAfterSignIn({
-        supabaseId: data.user.id,
-        email: data.user.email!,
-        name: data.user.user_metadata?.full_name,
-        avatar: data.user.user_metadata?.avatar_url,
-      });
+      await handleAfterSignIn();
       router.push('/dashboard');
     }
   };

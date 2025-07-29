@@ -1,15 +1,27 @@
 import * as jwt from 'jsonwebtoken';
+// It's good practice to import the payload type to ensure consistency
+import { JwtPayload } from 'src/auth/strategies/supabase.strategy';
 
-export function getTestAccessToken(userId: string | null, email?: string) {
-  const payload = {
-    sub: userId, // Use the actual user ID, not hardcoded 'test-user-id'
-    email: email || 'test@example.com',
+/**
+ * Generates a test JWT access token with the necessary payload.
+ * @param userId - The user's internal database ID (e.g., a CUID or UUID).
+ * @param supabaseId - The user's Supabase Auth ID.
+ * @param email - The user's email.
+ * @returns A signed JWT string.
+ */
+export const getTestAccessToken = (
+  userId: string,
+  supabaseId: string,
+  email: string
+): string => {
+  // This payload now matches the JwtPayload interface your guards expect.
+  const payload: Omit<JwtPayload, 'iat' | 'exp'> = {
+    userId: userId,
+    supabaseId: supabaseId,
+    email: email,
   };
-  const secret = process.env.SUPABASE_JWT_SECRET;
-  if (!secret) {
-    throw new Error('SUPABASE_JWT_SECRET is not defined in the environment');
-  }
-  return jwt.sign(payload, secret, {
-    expiresIn: '1h',
+
+  return jwt.sign(payload, process.env.SUPABASE_JWT_SECRET!, {
+    expiresIn: '1h', // Using jwt's built-in expiration option is cleaner
   });
-}
+};

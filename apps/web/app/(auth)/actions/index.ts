@@ -1,9 +1,9 @@
-// apps/web/src/app/auth/actions/index.ts
 'use server';
 
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { exchangeToken } from '@/actions/auth';
 
 export async function signInWithEmailAndPassword(data: {
   // Corrected typo: signIn
@@ -35,91 +35,22 @@ export async function signUpWithEmailAndPassword(data: {
   return JSON.parse(JSON.stringify(result));
 }
 
-// Server-side function that mimics the axios auth behavior
-async function createUserInBackendWithAuth(
-  userData: {
-    email: string;
-    name: string;
-    avatar: string;
-    supabaseId: string;
-  },
-  accessToken?: string
-) {
+export async function handleAfterSignIn() {
   try {
-    const backendUrl =
-      process.env.NEXT_PUBLIC_BACKEND_API_URL || 'http://localhost:3001';
+    const { token, user } = await exchangeToken();
+    // Assuming the token needs to be stored somewhere, e.g., in cookies or session storage
+    // For server actions, we might not need to store it if subsequent requests are authenticated via other means.
 
-    if (!backendUrl) {
-      throw new Error('Backend URL not configured');
-    }
+    // You might want to revalidate paths or redirect the user upon successful sign-in.
+    // For example, revalidate the dashboard path:
+    // revalidatePath('/dashboard');
 
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
-
-    if (accessToken) {
-      headers['Authorization'] = `Bearer ${accessToken}`;
-    }
-
-    // Check if user exists
-    const getUserResponse = await fetch(
-      `${backendUrl}/users/email/${userData.email}`,
-      {
-        method: 'GET',
-        headers,
-      }
-    );
-
-    if (getUserResponse.ok) {
-      const existingUser = await getUserResponse.json();
-      return existingUser;
-    }
-
-    // If user does not exist, create them
-    const response = await fetch(`${backendUrl}/users`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(userData),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(
-        `Backend user creation failed: ${response.status} ${errorText}`
-      );
-    }
-
-    const createdUser = await response.json();
-    return createdUser;
+    return { token, user };
   } catch (error) {
-    console.error('Error calling backend:', error);
-    throw error;
+    console.error('Error during token exchange:', error);
+    // Potentially redirect to an error page or return an error state
+    throw new Error('Failed to sign in. Please try again.');
   }
-}
-
-export async function handleAfterSignIn(user: {
-  supabaseId: string;
-  email: string;
-  name?: string;
-  avatar?: string;
-}) {
-  const supabase = await createSupabaseServerClient();
-
-  const session = (await supabase.auth.getSession()).data.session;
-
-  if (!session || !session.access_token) {
-    throw new Error('No valid session. User is not authenticated.');
-  }
-
-  return await createUserInBackendWithAuth(
-    {
-      supabaseId: user.supabaseId,
-      email: user.email,
-      name: user.name || 'Anonymous User',
-      avatar: user.avatar || '',
-    },
-    session.access_token
-  );
 }
 
 export async function logout() {

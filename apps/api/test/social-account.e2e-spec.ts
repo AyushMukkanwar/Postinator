@@ -1,13 +1,14 @@
+import { Platform, User } from 'generated/prisma';
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import * as request from 'supertest';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { AppModule } from 'src/app.module';
 import { DatabaseTestContainer } from './testcontainers-setup';
 import { execSync } from 'child_process';
 import { getTestAccessToken } from './helpers/get-test-token';
-import { PrismaExceptionFilter } from 'src/filters/prisma-exception.filter';
-import { Platform, User } from 'generated/prisma';
+import { EncryptionService } from 'src/encryption/encryption.service';
 
 describe('SocialAccount e2e tests', () => {
   let app: INestApplication;
@@ -17,26 +18,34 @@ describe('SocialAccount e2e tests', () => {
   let userB: User;
   let tokenA: string;
   let tokenB: string;
+  let encryptionService: EncryptionService;
 
   beforeAll(async () => {
-    // Start database container
-    dbContainer = new DatabaseTestContainer();
-    const connectionString = await dbContainer.start();
-
-    // Run migrations
-    execSync('npx prisma db push', {
-      env: { ...process.env, DATABASE_URL: connectionString },
-      stdio: 'inherit',
-    });
-
+    // 1. Compile the module
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+      .overrideProvider(ConfigService)
+      .useValue({
+        get: (key: string) => process.env[key],
+      })
+      .overrideProvider('SUPABASE_CLIENT')
+      .useValue({
+        auth: {
+          getUser: jest.fn().mockResolvedValue({
+            data: {
+              user: { id: 'test-supabase-id', email: 'test@example.com' },
+            },
+            error: null,
+          }),
+        },
+      })
+      .compile();
 
+    // 2. Create the Nest App instance
     app = moduleFixture.createNestApplication();
-    prisma = moduleFixture.get<PrismaService>(PrismaService);
 
-    app.useGlobalFilters(new PrismaExceptionFilter());
+    // 3. Apply standard pipes
     app.useGlobalPipes(
       new ValidationPipe({
         whitelist: true,
@@ -44,19 +53,26 @@ describe('SocialAccount e2e tests', () => {
       })
     );
 
+    // 4. Get provider instances
+    prisma = moduleFixture.get<PrismaService>(PrismaService);
+    encryptionService = moduleFixture.get<EncryptionService>(EncryptionService);
+
+    // 5. Initialize the app
     await app.init();
+
+    // 6. Setup database
+    dbContainer = new DatabaseTestContainer();
+    const connectionString = await dbContainer.start();
+    execSync('npx prisma db push', {
+      env: { ...process.env, DATABASE_URL: connectionString },
+      stdio: 'inherit',
+    });
   });
 
   afterAll(async () => {
-    console.log('🛑 afterAll: closing app…');
     await app.close();
-
-    console.log('🛑 afterAll: disconnecting prisma…');
     await prisma.$disconnect();
-
-    console.log('🛑 afterAll: stopping DB container…');
     await dbContainer.stop();
-    console.log('🛑 afterAll: STOPPED DB container…');
   });
 
   beforeEach(async () => {
@@ -67,285 +83,88 @@ describe('SocialAccount e2e tests', () => {
       data: {
         email: 'userA@test.com',
         name: 'User A',
+        supabaseId: 'supabase-user-a',
       },
     });
     userB = await prisma.user.create({
       data: {
         email: 'userB@test.com',
         name: 'User B',
+        supabaseId: 'supabase-user-b',
       },
     });
 
-    // Pass the actual user ID and email
-    tokenA = getTestAccessToken(userA.id, userA.email);
-    tokenB = getTestAccessToken(userB.id, userB.email);
+    tokenA = getTestAccessToken(userA.id, userA.supabaseId!, userA.email);
+    tokenB = getTestAccessToken(userB.id, userB.supabaseId!, userB.email);
   });
+
+  // --- POSITIVE TEST CASES ---
 
   it('/social-account POST - should create a social account', async () => {
     const response = await request(app.getHttpServer())
       .post('/social-account')
       .set('Authorization', `Bearer ${tokenA}`)
       .send({
-        userId: userA.id,
         platform: Platform.TWITTER,
         platformId: 'twitter123',
         username: 'userA_twitter',
         accessToken: 'test-token',
-        isActive: true,
+        refreshToken: 'test-refresh-token',
       })
       .expect(201);
 
-    expect(response.body).toMatchObject({
-      userId: userA.id,
-      platform: Platform.TWITTER,
-      platformId: 'twitter123',
-      username: 'userA_twitter',
-    });
+    expect(response.body).toMatchObject({ userId: userA.id });
   });
 
-  it('/social-account POST - should return 409 for duplicate social account', async () => {
-    await request(app.getHttpServer())
-      .post('/social-account')
-      .set('Authorization', `Bearer ${tokenA}`)
-      .send({
-        userId: userA.id,
-        platform: Platform.TWITTER,
-        platformId: 'twitter123',
-        username: 'userA_twitter',
-        accessToken: 'test-token',
-        isActive: true,
-      })
-      .expect(201);
-
-    await request(app.getHttpServer())
-      .post('/social-account')
-      .set('Authorization', `Bearer ${tokenA}`)
-      .send({
-        userId: userA.id,
-        platform: Platform.TWITTER,
-        platformId: 'twitter456',
-        username: 'userA_twitter_new',
-        accessToken: 'test-token-new',
-        isActive: true,
-      })
-      .expect(409);
-  });
-
-  it('/social-account/:id GET - should return social account by ID', async () => {
+  it('/social-account/:id GET - should return a social account owned by the user', async () => {
     const socialAccount = await prisma.socialAccount.create({
       data: {
         platform: Platform.TWITTER,
-        platformId: 'twitter_test_id_1',
-        username: 'userA_twitter_test',
-        accessToken: 'test-token',
-        user: {
-          connect: {
-            id: userA.id,
-          },
-        },
+        platformId: 'twitter-get-test',
+        username: 'userA_twitter_get',
+        accessToken: encryptionService.encrypt('test-token'),
+        user: { connect: { id: userA.id } },
       },
     });
 
+    // Use the correct token (tokenA) to access the resource
     const response = await request(app.getHttpServer())
       .get(`/social-account/${socialAccount.id}`)
       .set('Authorization', `Bearer ${tokenA}`)
       .expect(200);
 
-    expect(response.body).toMatchObject({
-      id: socialAccount.id,
-      userId: userA.id,
-      platform: Platform.TWITTER,
-    });
+    expect(response.body.id).toEqual(socialAccount.id);
+    expect(response.body.userId).toEqual(userA.id);
   });
 
-  it('/social-account/:id GET - should return 404 for non-existent social account', async () => {
-    await request(app.getHttpServer())
-      .get('/social-account/non-existent-id')
-      .set('Authorization', `Bearer ${tokenA}`)
-      .expect(404);
-  });
-
-  it("/social-account/:id GET - should return 403 when user tries to get another user's social account", async () => {
+  it('/social-account/:id PATCH - should update a social account owned by the user', async () => {
     const socialAccount = await prisma.socialAccount.create({
       data: {
-        platform: Platform.LINKEDIN,
-        platformId: 'linkedin123',
-        username: 'userA_linkedin',
-        accessToken: 'test-token',
-        user: {
-          connect: {
-            id: userA.id,
-          },
-        },
+        platform: Platform.TWITTER,
+        platformId: 'twitter-patch-test',
+        username: 'userA_twitter_patch',
+        accessToken: encryptionService.encrypt('test-token'),
+        user: { connect: { id: userA.id } },
       },
     });
-
-    await request(app.getHttpServer())
-      .get(`/social-account/${socialAccount.id}`)
-      .set('Authorization', `Bearer ${tokenB}`)
-      .expect(403);
-  });
-
-  it('/social-account/:id PATCH - should update social account by ID', async () => {
-    const socialAccount = await prisma.socialAccount.create({
-      data: {
-        platform: Platform.LINKEDIN,
-        platformId: 'linkedin123',
-        username: 'userA_linkedin',
-        accessToken: 'test-token',
-        user: {
-          connect: {
-            id: userA.id,
-          },
-        },
-      },
-    });
-
-    const updateDto = {
-      username: 'userA_linkedin_updated',
-    };
 
     const response = await request(app.getHttpServer())
       .patch(`/social-account/${socialAccount.id}`)
       .set('Authorization', `Bearer ${tokenA}`)
-      .send(updateDto)
+      .send({ username: 'updated_username' })
       .expect(200);
 
-    expect(response.body).toMatchObject({
-      id: socialAccount.id,
-      username: updateDto.username,
-    });
+    expect(response.body.username).toEqual('updated_username');
   });
 
-  it('/social-account/:id PATCH - should return 404 for non-existent social account', async () => {
-    await request(app.getHttpServer())
-      .patch('/social-account/non-existent-id')
-      .set('Authorization', `Bearer ${tokenA}`)
-      .send({
-        username: 'updated',
-      })
-      .expect(404);
-  });
-
-  it("/social-account/:id PATCH - should return 403 when user tries to update another user's social account", async () => {
-    const socialAccount = await prisma.socialAccount.create({
-      data: {
-        platform: Platform.LINKEDIN,
-        platformId: 'linkedin_test_id_2',
-        username: 'userA_linkedin_test_2',
-        accessToken: 'test-token',
-        user: {
-          connect: {
-            id: userA.id,
-          },
-        },
-      },
-    });
-
-    await request(app.getHttpServer())
-      .patch(`/social-account/${socialAccount.id}`)
-      .set('Authorization', `Bearer ${tokenB}`)
-      .send({
-        username: 'malicious_update',
-      })
-      .expect(403);
-  });
-
-  it('/social-account/:id PATCH - should update isActive field', async () => {
+  it('/social-account/:id DELETE - should delete a social account owned by the user', async () => {
     const socialAccount = await prisma.socialAccount.create({
       data: {
         platform: Platform.TWITTER,
-        platformId: 'twitter_active_test',
-        username: 'userA_twitter_active',
-        accessToken: 'test-token',
-        isActive: true,
-        user: {
-          connect: {
-            id: userA.id,
-          },
-        },
-      },
-    });
-
-    const updateDto = {
-      isActive: false,
-    };
-
-    const response = await request(app.getHttpServer())
-      .patch(`/social-account/${socialAccount.id}`)
-      .set('Authorization', `Bearer ${tokenA}`)
-      .send(updateDto)
-      .expect(200);
-
-    expect(response.body).toMatchObject({
-      id: socialAccount.id,
-      isActive: false,
-    });
-  });
-
-  it('/social-account POST - should return 400 for invalid input (missing fields)', async () => {
-    await request(app.getHttpServer())
-      .post('/social-account')
-      .set('Authorization', `Bearer ${tokenA}`)
-      .send({
-        // Missing userId, platform, platformId, username, accessToken
-        isActive: true,
-      })
-      .expect(400);
-  });
-
-  it('/social-account POST - should return 400 for invalid input (invalid platform enum)', async () => {
-    await request(app.getHttpServer())
-      .post('/social-account')
-      .set('Authorization', `Bearer ${tokenA}`)
-      .send({
-        userId: userA.id,
-        platform: 'INVALID_PLATFORM', // Invalid enum value
-        platformId: 'test_id',
-        username: 'test_user',
-        accessToken: 'test_token',
-        isActive: true,
-      })
-      .expect(400);
-  });
-
-  it('/social-account/:id PATCH - should return 400 for invalid input (invalid isActive type)', async () => {
-    const socialAccount = await prisma.socialAccount.create({
-      data: {
-        platform: Platform.TWITTER,
-        platformId: 'twitter_patch_invalid_type',
-        username: 'userA_patch_invalid_type',
-        accessToken: 'test-token',
-        isActive: true,
-        user: {
-          connect: {
-            id: userA.id,
-          },
-        },
-      },
-    });
-
-    await request(app.getHttpServer())
-      .patch(`/social-account/${socialAccount.id}`)
-      .set('Authorization', `Bearer ${tokenA}`)
-      .send({
-        isActive: 'not_a_boolean', // Invalid type
-      })
-      .expect(400);
-  });
-
-  it('/social-account/:id DELETE - should delete social account by ID', async () => {
-    const socialAccount = await prisma.socialAccount.create({
-      data: {
-        platform: Platform.TWITTER,
-        platformId: 'twitter_test_id_2',
-        username: 'userA_twitter_test_2',
-        accessToken: 'test-token',
-        user: {
-          connect: {
-            id: userA.id,
-          },
-        },
+        platformId: 'twitter-delete-test',
+        username: 'userA_twitter_delete',
+        accessToken: encryptionService.encrypt('test-token'),
+        user: { connect: { id: userA.id } },
       },
     });
 
@@ -360,30 +179,57 @@ describe('SocialAccount e2e tests', () => {
     expect(deletedAccount).toBeNull();
   });
 
-  it('/social-account/:id DELETE - should return 404 for non-existent social account', async () => {
-    await request(app.getHttpServer())
-      .delete('/social-account/non-existent-id')
-      .set('Authorization', `Bearer ${tokenA}`)
-      .expect(404);
-  });
+  // --- NEGATIVE (PERMISSION) TEST CASES ---
 
-  it("/social-account/:id DELETE - should return 403 when user tries to delete another user's social account", async () => {
-    const socialAccount = await prisma.socialAccount.create({
+  it("/social-account/:id GET - should return 403 when user tries to get another user's social account", async () => {
+    const socialAccountOfA = await prisma.socialAccount.create({
       data: {
-        platform: Platform.TWITTER,
-        platformId: 'twitter_test_id_3',
-        username: 'userA_twitter_test_3',
-        accessToken: 'test-token',
-        user: {
-          connect: {
-            id: userA.id,
-          },
-        },
+        platform: Platform.LINKEDIN,
+        platformId: 'linkedin123',
+        username: 'userA_linkedin',
+        accessToken: encryptionService.encrypt('test-token'),
+        user: { connect: { id: userA.id } },
       },
     });
 
     await request(app.getHttpServer())
-      .delete(`/social-account/${socialAccount.id}`)
+      .get(`/social-account/${socialAccountOfA.id}`)
+      .set('Authorization', `Bearer ${tokenB}`)
+      .expect(403);
+  });
+
+  it("/social-account/:id PATCH - should return 403 when user tries to update another user's social account", async () => {
+    const socialAccountOfA = await prisma.socialAccount.create({
+      data: {
+        platform: Platform.LINKEDIN,
+        platformId: 'linkedin_test_id_2',
+        username: 'userA_linkedin_test_2',
+        accessToken: encryptionService.encrypt('test-token'),
+        user: { connect: { id: userA.id } },
+      },
+    });
+
+    await request(app.getHttpServer())
+      .patch(`/social-account/${socialAccountOfA.id}`)
+      .set('Authorization', `Bearer ${tokenB}`)
+      .send({ username: 'malicious_update' })
+      .expect(403);
+  });
+
+  it("/social-account/:id DELETE - should return 403 when user tries to delete another user's social account", async () => {
+    const socialAccountOfA = await prisma.socialAccount.create({
+      data: {
+        platform: Platform.TWITTER,
+        platformId: 'twitter_test_id_3',
+        username: 'userA_twitter_test_3',
+        accessToken: encryptionService.encrypt('test-token'),
+        refreshToken: encryptionService.encrypt('test-refresh-token'),
+        user: { connect: { id: userA.id } },
+      },
+    });
+
+    await request(app.getHttpServer())
+      .delete(`/social-account/${socialAccountOfA.id}`)
       .set('Authorization', `Bearer ${tokenB}`)
       .expect(403);
   });

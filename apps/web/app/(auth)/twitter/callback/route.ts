@@ -1,5 +1,7 @@
 // (auth)/twitter/callback/route.ts
+import { createSocialAccount } from '@/actions/social-account';
 import { verifyCSRFToken } from '@/lib/csrf';
+
 import { TwitterOAuthTokenResponse } from '@/types/twitter';
 import { parse, serialize } from 'cookie';
 import { NextRequest, NextResponse } from 'next/server';
@@ -92,11 +94,36 @@ export async function GET(req: NextRequest) {
 
     const tokens: TwitterOAuthTokenResponse = await tokenResponse.json();
 
-    // Store tokens securely (in DB, encrypted cookies, etc.)
-    console.log('Access token received:', tokens);
-    if (tokens.refresh_token) {
-      console.log('Refresh token received (offline.access scope was used)');
+    // Fetch user's profile from X API
+    const userProfileResponse = await fetch('https://api.x.com/2/users/me', {
+      headers: {
+        Authorization: `Bearer ${tokens.access_token}`,
+      },
+    });
+
+    if (!userProfileResponse.ok) {
+      const errorData = await userProfileResponse.text();
+      console.error(
+        'Failed to fetch user profile:',
+        userProfileResponse.status,
+        errorData
+      );
+      return NextResponse.redirect(
+        new URL('/login?error=profile_error', req.url)
+      );
     }
+
+    const userProfile = await userProfileResponse.json();
+    const { id: platformId, username } = userProfile.data;
+
+    // Create social account in the database
+    await createSocialAccount({
+      platform: 'TWITTER',
+      platformId,
+      username,
+      accessToken: tokens.access_token,
+      refreshToken: tokens.refresh_token,
+    });
 
     // Clear the OAuth cookies
     const response = NextResponse.redirect(

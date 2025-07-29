@@ -1,6 +1,6 @@
 {
   "moduleFileExtensions": ["js", "json", "ts"],
-  "rootDir": ".",
+  "rootDir": "../",
   "testEnvironment": "node",
   "testRegex": ".e2e-spec.ts$",
   "transform": {
@@ -11,7 +11,8 @@
   "testTimeout": 90000,
   "maxWorkers": 1,
   "moduleNameMapper": {
-    "^src/(.*)$": "<rootDir>/../src/$1",
-    "^generated/prisma$": "<rootDir>/../generated/prisma"
-  }
+    "^src/(.*)$": "<rootDir>/src/$1",
+    "^generated/prisma$": "<rootDir>/generated/prisma"
+  },
+  "setupFilesAfterEnv": ["<rootDir>/test/setup.ts"]
 }

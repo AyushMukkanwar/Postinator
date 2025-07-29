@@ -70,7 +70,8 @@ export class CreateSocialAccountDto {
 
   @ApiProperty({ description: 'Whether account is active', example: true })
   @IsBoolean()
-  isActive: boolean;
+  @IsOptional()
+  isActive?: boolean;
 
   // Remove userId - it will come from JWT token
 }

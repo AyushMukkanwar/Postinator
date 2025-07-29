@@ -4,34 +4,6 @@ import { axiosAuth } from '@/lib/axios';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { User } from '@/types/user';
 
-export const createUser = async (user: {
-  email: string;
-  name?: string;
-  avatar?: string;
-  timezone?: string;
-}) => {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
-  if (!session) {
-    throw new Error('Not authenticated');
-  }
-
-  const response = await axiosAuth.post(
-    '/users',
-    { ...user, supabaseId: session.user.id },
-    {
-      headers: {
-        Authorization: `Bearer ${session.access_token}`,
-      },
-    }
-  );
-
-  return response.data;
-};
-
 export const getUserByEmail = async (email: string): Promise<User | null> => {
   const supabase = await createSupabaseServerClient();
   const {
