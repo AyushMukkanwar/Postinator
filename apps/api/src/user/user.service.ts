@@ -25,6 +25,10 @@ export class UserService {
     return this.userRepository.findByEmail(email);
   }
 
+  async getUserByEmailWithSocialAccounts(email: string): Promise<User | null> {
+    return this.userRepository.findByEmailWithSocialAccounts(email);
+  }
+
   async getUserWithSocialAccounts(id: string): Promise<User> {
     const user = await this.userRepository.findWithSocialAccounts(id);
     if (!user) {

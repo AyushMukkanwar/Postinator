@@ -21,12 +21,7 @@ export default function AuthCallbackPage() {
         }
 
         if (data.session) {
-          await handleAfterSignIn({
-            supabaseId: data.session.user.id,
-            email: data.session.user.email!,
-            name: data.session.user.user_metadata.full_name,
-            avatar: data.session.user.user_metadata.avatar_url,
-          });
+          await handleAfterSignIn();
           router.push('/dashboard');
         } else {
           setTimeout(async () => {

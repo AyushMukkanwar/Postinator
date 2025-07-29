@@ -14,6 +14,7 @@ export interface IUserRepository
   > {
   findByEmail(email: string): Promise<User | null>;
   findWithSocialAccounts(id: string): Promise<User | null>;
+  findByEmailWithSocialAccounts(email: string): Promise<User | null>;
   findWithRecentPosts(id: string, limit?: number): Promise<User | null>;
 }
 
@@ -50,6 +51,18 @@ export class UserRepository implements IUserRepository {
     });
     if (!user) throw new NotFoundException(`User with ID ${id} not found`);
     return user;
+  }
+
+  async findByEmailWithSocialAccounts(email: string): Promise<User | null> {
+    return await this.prisma.user.findUnique({
+      where: { email },
+      include: {
+        socialAccounts: {
+          where: { isActive: true },
+          orderBy: { createdAt: 'desc' },
+        },
+      },
+    });
   }
 
   async findWithRecentPosts(id: string, limit = 5): Promise<User> {

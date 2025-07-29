@@ -1,4 +1,3 @@
-// resource-owner.guard.ts
 import {
   Injectable,
   CanActivate,
@@ -8,111 +7,78 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Request } from 'express';
-import { UserService } from 'src/user/user.service';
-import { SocialAccountService } from 'src/social-account/social-account.service';
-
-interface AuthenticatedRequest extends Request {
-  user?: {
-    sub: string; // This is the user ID from JWT
-    email: string;
-  };
-}
+import { PrismaService } from 'src/prisma/prisma.service';
+import { User } from 'generated/prisma';
 
 @Injectable()
 export class ResourceOwnerGuard implements CanActivate {
   constructor(
     private reflector: Reflector,
-    private userService: UserService,
-    private socialAccountService: SocialAccountService
+    private prisma: PrismaService
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request: AuthenticatedRequest = context.switchToHttp().getRequest();
+    const request = context
+      .switchToHttp()
+      .getRequest<Request & { user: User }>();
     const { params, user: currentUser } = request;
 
-    if (!currentUser || !currentUser.sub) {
+    if (!currentUser || !currentUser.id) {
       throw new ForbiddenException('Authentication required');
     }
 
-    const actorUserId = currentUser.sub; // Use user ID from JWT
-    let resourceUserId: string | null;
+    const controllerName = context.getClass().name;
 
-    const paramName = this.reflector.get<string>(
-      'resourceParamName',
-      context.getHandler()
-    );
-
-    try {
-      if (!paramName) {
-        throw new Error(
-          'Resource parameter name not provided to ResourceOwnerGuard'
-        );
-      }
-
-      const resourceId = params[paramName];
-
-      if (!resourceId) {
-        throw new ForbiddenException(
-          `Resource ID not found in request parameters: ${paramName}`
-        );
-      }
-
-      if (paramName === 'id') {
-        // Check what controller we're in
-        const controllerName = context.getClass().name;
-
-        if (controllerName === 'SocialAccountController') {
-          // For social account resources
-          const socialAccount =
-            await this.socialAccountService.findOne(resourceId);
-          if (!socialAccount) {
-            throw new NotFoundException('Social account not found');
-          }
-          resourceUserId = socialAccount.userId;
-        } else {
-          // For user resources, the resource ID is the user ID
-          const resourceUser = await this.userService.getUserById(resourceId);
-          if (!resourceUser) {
-            throw new NotFoundException('User not found');
-          }
-          resourceUserId = resourceUser.supabaseId;
-        }
-      } else if (paramName === 'email') {
-        const resourceUser = await this.userService.getUserByEmail(resourceId);
-        if (!resourceUser) {
+    if (controllerName === 'UserController') {
+      const resourceId = params.id;
+      if (resourceId) {
+        const userResource = await this.prisma.user.findUnique({
+          where: { id: resourceId },
+        });
+        if (!userResource) {
           throw new NotFoundException('User not found');
         }
-        resourceUserId = resourceUser.supabaseId;
-      } else if (paramName === 'socialAccountId') {
-        // For social account resources
-        const socialAccount =
-          await this.socialAccountService.findOne(resourceId);
-        if (!socialAccount) {
-          throw new NotFoundException('Social account not found');
+        if (userResource.id === currentUser.id) {
+          return true;
         }
-        resourceUserId = socialAccount.userId;
-      } else {
-        throw new ForbiddenException('Unsupported resource parameter name');
       }
 
-      // Check if the actor owns the resource
-      console.log(
-        `[ResourceOwnerGuard] Actor ID: ${actorUserId}, Resource User ID: ${resourceUserId}`
-      );
-      if (actorUserId !== resourceUserId) {
-        throw new ForbiddenException('You can only access your own resources');
+      const resourceEmail = params.email;
+      if (resourceEmail) {
+        const userResource = await this.prisma.user.findUnique({
+          where: { email: resourceEmail },
+        });
+        if (!userResource) {
+          throw new NotFoundException('User not found');
+        }
+        if (userResource.id === currentUser.id) {
+          return true;
+        }
+      }
+    } else if (controllerName === 'SocialAccountController') {
+      const resourceId = params.id;
+      if (!resourceId) {
+        throw new ForbiddenException(
+          'Resource ID not found in request parameters'
+        );
       }
 
-      return true;
-    } catch (error) {
-      if (
-        error instanceof NotFoundException ||
-        error instanceof ForbiddenException
-      ) {
-        throw error;
+      const socialAccount = await this.prisma.socialAccount.findUnique({
+        where: { id: resourceId },
+        select: { userId: true },
+      });
+
+      if (!socialAccount) {
+        throw new NotFoundException('Social account not found');
       }
-      console.error('ResourceOwnerGuard - Unexpected error caught:', error);
-      throw new ForbiddenException('Access denied');
+
+      if (socialAccount.userId === currentUser.id) {
+        return true;
+      }
     }
+
+    throw new ForbiddenException(
+      'You do not have permission to access this resource'
+    );
   }
 }

@@ -7,7 +7,6 @@ import {
   Param,
   Delete,
   UseGuards,
-  Request,
 } from '@nestjs/common';
 import { SocialAccountService } from './social-account.service';
 import { CreateSocialAccountDto } from './dto/create-social-account.dto';
@@ -17,6 +16,8 @@ import { ResourceOwnerGuard } from 'src/auth/guards/resource-owner.guard';
 import { ResourceParamName } from 'src/auth/decorators/resource-param.decorator';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { SocialAccountEntity } from './entities/social-account.entity';
+import { User as UserModel } from 'generated/prisma';
+import { User } from 'src/auth/decorators/user.decorator';
 
 @ApiTags('social-account')
 @UseGuards(JwtAuthGuard)
@@ -39,9 +40,9 @@ export class SocialAccountController {
   })
   create(
     @Body() createSocialAccountDto: CreateSocialAccountDto,
-    @Request() req: any // Add request parameter to access user from JWT
+    @User() user: UserModel
   ) {
-    const userId = req.user.sub; // Extract user ID from JWT token
+    const userId = user.id;
     return this.socialAccountService.create(createSocialAccountDto, userId);
   }
 
@@ -56,8 +57,20 @@ export class SocialAccountController {
     return this.socialAccountService.findAll();
   }
 
+  @Get('user/me')
+  @ApiOperation({ summary: 'Get all social accounts for the current user' })
+  @ApiResponse({
+    status: 200,
+    description: 'Social accounts retrieved successfully',
+    type: [SocialAccountEntity],
+  })
+  findMine(@User() user: UserModel) {
+    const userId = user.id;
+    return this.socialAccountService.findAll({ where: { userId } });
+  }
+
   @Get(':id')
-  @UseGuards(ResourceOwnerGuard) // Add this
+  @UseGuards(ResourceOwnerGuard)
   @ResourceParamName('id')
   @ApiOperation({ summary: 'Get social account by ID' })
   @ApiResponse({

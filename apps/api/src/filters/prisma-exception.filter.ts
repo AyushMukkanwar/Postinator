@@ -39,6 +39,14 @@ export class PrismaExceptionFilter implements ExceptionFilter {
       });
     }
 
+    if (prismaError.code === 'P2003') {
+      return response.status(HttpStatus.BAD_REQUEST).json({
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: 'Foreign key constraint failed',
+        error: 'Bad Request',
+      });
+    }
+
     if (exception instanceof HttpException) {
       const status = exception.getStatus();
       const errorResponse = exception.getResponse() as ErrorResponse | string;

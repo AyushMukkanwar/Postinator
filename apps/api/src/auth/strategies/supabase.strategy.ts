@@ -1,10 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
+import { UserService } from 'src/user/user.service';
 
 export interface JwtPayload {
-  sub: string;
+  supabaseId: string;
+  userId: string;
   email: string;
   iat?: number;
   exp?: number;
@@ -12,17 +14,26 @@ export interface JwtPayload {
 
 @Injectable()
 export class SupabaseStrategy extends PassportStrategy(Strategy) {
-  public constructor(private readonly configService: ConfigService) {
+  public constructor(
+    private readonly configService: ConfigService,
+    private readonly userService: UserService
+  ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: configService.get<string>('SUPABASE_JWT_SECRET'), // Make sure SUPABASE_JWT_SECRET is in your .env
+      secretOrKey: configService.get<string>('SUPABASE_JWT_SECRET'),
     });
   }
 
-  validate(payload: JwtPayload) {
-    // You can add more validation logic here if needed
-    // For example, check if user exists in your DB, or if the token is revoked
-    return payload;
+  async validate(payload: JwtPayload) {
+    try {
+      const user = await this.userService.getUserById(payload.userId);
+      if (!user) {
+        throw new UnauthorizedException('User not found');
+      }
+      return user;
+    } catch (error) {
+      throw new UnauthorizedException('Invalid token or user does not exist');
+    }
   }
 }

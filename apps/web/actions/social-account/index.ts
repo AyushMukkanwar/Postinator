@@ -9,6 +9,7 @@ export const createSocialAccount = async (socialAccount: {
   platformId: string;
   username: string;
   accessToken: string;
+  refreshToken?: string;
   isActive?: boolean;
 }) => {
   const supabase = await createSupabaseServerClient();
@@ -109,4 +110,32 @@ export const deleteSocialAccount = async (id: string) => {
   });
 
   return response.data;
+};
+
+export const getSocialAccounts = async (): Promise<SocialAccount[]> => {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session) {
+    throw new Error('Not authenticated');
+  }
+
+  try {
+    const response = await axiosAuth.get('/social-account/user/me', {
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+      },
+    });
+
+    return response.data;
+  } catch (error: any) {
+    console.error('Error in getSocialAccounts():', {
+      message: error.message,
+      status: error.response?.status,
+      data: error.response?.data,
+    });
+    throw error;
+  }
 };
