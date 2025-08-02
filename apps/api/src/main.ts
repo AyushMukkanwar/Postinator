@@ -6,6 +6,8 @@ import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { PrismaExceptionFilter } from './filters/prisma-exception.filter';
 
+import { HttpExceptionFilter } from './filters/http-exception.filter';
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
@@ -25,6 +27,8 @@ async function bootstrap() {
       transform: true, // Automatically transform payloads to DTO instances
     })
   );
+
+  app.useGlobalFilters(new PrismaExceptionFilter(), new HttpExceptionFilter());
 
   const config = new DocumentBuilder()
     .setTitle('Uploader Docs')

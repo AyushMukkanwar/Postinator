@@ -23,7 +23,6 @@ import { Separator } from '@/components/ui/separator';
 import { Mail, Lock, AlertCircle } from 'lucide-react';
 
 export default function LoginPage() {
-  console.log('LoginPage component rendering...');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const router = useRouter();
@@ -34,14 +33,12 @@ export default function LoginPage() {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       setOrigin(window.location.origin);
-      console.log('useEffect: origin set to', window.location.origin);
     }
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    console.log('handleSubmit: Attempting to sign in with email:', email);
     const { data, error: signInError } = await signInWithEmailAndPassword({
       email,
       password,
@@ -51,17 +48,14 @@ export default function LoginPage() {
       console.error('handleSubmit: Error logging in:', signInError);
       setError(`Login failed: ${signInError.message}`);
     } else if (data.user) {
-      console.log('handleSubmit: User signed in successfully:', data.user.id);
-      await handleAfterSignIn();
+      if (data.session) {
+        await handleAfterSignIn(data.session.access_token);
+      }
       router.push('/dashboard');
     }
   };
 
   const handleGoogleSignIn = async () => {
-    console.log(
-      'handleGoogleSignIn: Attempting Google Sign-In. Current origin:',
-      origin
-    );
     if (!origin) {
       console.warn(
         'handleGoogleSignIn: Origin not available, cannot proceed with Google Sign-In.'

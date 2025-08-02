@@ -21,8 +21,15 @@ export class UserService {
   }
 
   async getUserByEmail(email: string): Promise<User | null> {
-    // repository will throw on DB errors; null means “not found”
     return this.userRepository.findByEmail(email);
+  }
+
+  async getUserByEmailOrThrow(email: string): Promise<User> {
+    const user = await this.userRepository.findByEmail(email);
+    if (!user) {
+      throw new NotFoundException(`User with email ${email} not found`);
+    }
+    return user;
   }
 
   async getUserByEmailWithSocialAccounts(email: string): Promise<User | null> {

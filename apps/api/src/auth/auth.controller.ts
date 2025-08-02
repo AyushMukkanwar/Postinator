@@ -9,13 +9,18 @@ import {
 import { Response } from 'express';
 import { AuthService, EnhancedTokenResponse } from './auth.service';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { IsNotEmpty, IsString } from 'class-validator';
 
 // DTOs for request validation
 export class ExchangeTokenDto {
+  @IsString()
+  @IsNotEmpty()
   supabaseToken: string;
 }
 
 export class RefreshTokenDto {
+  @IsString()
+  @IsNotEmpty()
   refreshToken: string;
 }
 

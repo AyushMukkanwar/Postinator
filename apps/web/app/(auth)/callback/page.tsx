@@ -10,34 +10,30 @@ export default function AuthCallbackPage() {
   const supabase = getSupabaseFrontendClient();
 
   useEffect(() => {
-    const handleAuthCallback = async () => {
-      try {
-        const { data, error } = await supabase.auth.getSession();
-
-        if (error) {
-          console.error('Auth callback error:', error);
-          router.push('/login?error=auth_callback_error');
-          return;
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (event === 'SIGNED_IN') {
+          console.log(
+            'SIGNED_IN event fired. Access token:',
+            session?.access_token
+          );
+          if (session?.access_token) {
+            handleAfterSignIn(session.access_token)
+              .then(() => {
+                router.push('/dashboard');
+              })
+              .catch((error) => {
+                console.error('Error after sign in:', error);
+                router.push('/login?error=unexpected_error');
+              });
+          }
         }
-
-        if (data.session) {
-          await handleAfterSignIn();
-          router.push('/dashboard');
-        } else {
-          setTimeout(async () => {
-            const { data: sessionData } = await supabase.auth.getSession();
-            if (!sessionData.session) {
-              router.push('/login?error=session_not_found_after_callback');
-            }
-          }, 2000);
-        }
-      } catch (err) {
-        console.error('Unexpected error during auth callback:', err);
-        router.push('/login?error=unexpected_error');
       }
-    };
+    );
 
-    handleAuthCallback();
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
   }, [supabase, router]);
 
   return (

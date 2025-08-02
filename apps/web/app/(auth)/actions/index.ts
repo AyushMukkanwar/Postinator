@@ -1,9 +1,8 @@
 'use server';
 
 import { createSupabaseServerClient } from '@/lib/supabase/server';
-import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { exchangeToken } from '@/actions/auth';
+import { exchangeTokenOnCallback } from '@/actions/auth';
 
 export async function signInWithEmailAndPassword(data: {
   // Corrected typo: signIn
@@ -35,20 +34,13 @@ export async function signUpWithEmailAndPassword(data: {
   return JSON.parse(JSON.stringify(result));
 }
 
-export async function handleAfterSignIn() {
+export async function handleAfterSignIn(accessToken: string) {
   try {
-    const { token, user } = await exchangeToken();
-    // Assuming the token needs to be stored somewhere, e.g., in cookies or session storage
-    // For server actions, we might not need to store it if subsequent requests are authenticated via other means.
-
-    // You might want to revalidate paths or redirect the user upon successful sign-in.
-    // For example, revalidate the dashboard path:
-    // revalidatePath('/dashboard');
+    const { token, user } = await exchangeTokenOnCallback(accessToken);
 
     return { token, user };
   } catch (error) {
-    console.error('Error during token exchange:', error);
-    // Potentially redirect to an error page or return an error state
+    console.error('5. Error during token exchange:', error);
     throw new Error('Failed to sign in. Please try again.');
   }
 }
