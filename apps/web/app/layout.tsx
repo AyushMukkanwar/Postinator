@@ -6,7 +6,7 @@ import { ThemeProvider } from '@/components/theme-provider';
 import { DashboardLayout } from '@/components/dashboard-layout';
 import InitUser from '@/components/InitUser';
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({ subsets: ['latin'], display: 'swap' });
 
 export const metadata: Metadata = {
   title: 'Social Media Dashboard',

@@ -3,6 +3,8 @@ import { JwtService } from '@nestjs/jwt';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { UserService } from '../user/user.service'; // Adjust path as needed
 import { Prisma } from 'generated/prisma';
+import { ConfigService } from '@nestjs/config';
+import * as jwt from 'jsonwebtoken';
 
 export interface EnhancedTokenResponse {
   token: string;
@@ -17,38 +19,44 @@ export class AuthService {
   constructor(
     @Inject('SUPABASE_CLIENT') private supabase: SupabaseClient,
     private jwtService: JwtService,
-    private userService: UserService
+    private userService: UserService,
+    private configService: ConfigService
   ) {}
 
   async exchangeSupabaseToken(
     supabaseToken: string
   ): Promise<EnhancedTokenResponse> {
     try {
-      // 1. Validate Supabase token using backend Supabase client
-      const {
-        data: { user },
-        error,
-      } = await this.supabase.auth.getUser(supabaseToken);
+      const jwtSecret = this.configService.get<string>('SUPABASE_JWT_SECRET');
+      if (!jwtSecret) {
+        throw new Error(
+          'SUPABASE_JWT_SECRET is not defined in environment variables.'
+        );
+      }
 
-      if (error || !user || !user.email) {
-        throw new UnauthorizedException('Invalid Supabase token');
+      const decoded = jwt.verify(supabaseToken, jwtSecret);
+
+      if (typeof decoded !== 'object' || !decoded.sub || !decoded.email) {
+        throw new UnauthorizedException('Invalid token payload');
       }
 
       // 2.1 Find User
-      let dbUser = await this.userService.getUserByEmail(user.email);
+      let dbUser = await this.userService.getUserByEmail(
+        decoded.email as string
+      );
 
       //   2.2 If not User create one
       if (!dbUser) {
         const createUserInput: Prisma.UserCreateInput = {
-          email: user.email,
-          supabaseId: user.id,
+          email: decoded.email as string,
+          supabaseId: decoded.sub as string,
         };
         dbUser = await this.userService.createUser(createUserInput);
       }
 
       // 3. Create enhanced JWT with your database user info
       const enhancedPayload = {
-        supabaseId: user.id,
+        supabaseId: decoded.sub as string,
         userId: dbUser.id,
         email: dbUser.email,
         // Add other fields you need (role, etc.)
@@ -68,7 +76,10 @@ export class AuthService {
         },
       };
     } catch (error) {
-      console.error('Token exchange error:', error);
+      console.error('Token exchange error during verification:', error);
+      if (error instanceof jwt.JsonWebTokenError) {
+        throw new UnauthorizedException('Invalid Supabase token');
+      }
       throw new UnauthorizedException('Token exchange failed');
     }
   }

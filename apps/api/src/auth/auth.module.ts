@@ -36,7 +36,7 @@ import { DatabaseModule } from 'src/database/database.module';
       useFactory: (configService: ConfigService) => {
         return createClient(
           configService.get<string>('SUPABASE_URL')!,
-          configService.get<string>('SUPABASE_ANON_KEY')!
+          configService.get<string>('SUPABASE_SERVICE_KEY')!
         );
       },
       inject: [ConfigService],

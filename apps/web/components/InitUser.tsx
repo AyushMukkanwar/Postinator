@@ -1,10 +1,9 @@
 'use client';
 
 import { useEffect } from 'react';
-import { getUserByEmail } from '@/actions/user';
 import { useUserStore } from '@/store/userStore';
 import { User } from '@/types/user';
-import { checkAuth } from '@/app/(auth)/actions';
+import { exchangeToken } from '@/actions/auth';
 
 export default function InitUser() {
   const { setUser } = useUserStore();
@@ -12,10 +11,7 @@ export default function InitUser() {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const email = (await checkAuth()).email;
-        if (!email) return;
-
-        const user: User | null = await getUserByEmail(email);
+        const user: User | null = await exchangeToken();
         if (user) {
           setUser(user);
         }
