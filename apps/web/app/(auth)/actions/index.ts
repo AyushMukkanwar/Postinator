@@ -59,9 +59,9 @@ export async function logout() {
 
 export async function checkAuth() {
   const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase.auth.getUser();
-  if (error || !data?.user) {
+  const { data, error } = await supabase.auth.getClaims();
+  if (error || !data?.claims) {
     redirect('/login');
   }
-  return data.user;
+  return data.claims;
 }

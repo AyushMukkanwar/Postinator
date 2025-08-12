@@ -1,6 +1,8 @@
 // (auth)/twitter/callback/route.ts
-import { createSocialAccount } from '@/actions/social-account';
+import { upsertSocialAccount } from '@/actions/social-account';
 import { verifyCSRFToken } from '@/lib/csrf';
+
+import { Platform } from '@/types/socialAccount';
 
 import { TwitterOAuthTokenResponse } from '@/types/twitter';
 import { parse, serialize } from 'cookie';
@@ -114,20 +116,25 @@ export async function GET(req: NextRequest) {
     }
 
     const userProfile = await userProfileResponse.json();
-    const { id: platformId, username } = userProfile.data;
+    const { id: platformId, username }: { id: string; username: string } =
+      userProfile.data;
 
     // Create social account in the database
-    await createSocialAccount({
-      platform: 'TWITTER',
+    const platformName: Platform = 'TWITTER';
+
+    const socialAccountData = {
+      platform: platformName,
       platformId,
       username,
       accessToken: tokens.access_token,
       refreshToken: tokens.refresh_token,
-    });
+      expiresIn: tokens.expires_in,
+    };
 
+    await upsertSocialAccount(socialAccountData);
     // Clear the OAuth cookies
     const response = NextResponse.redirect(
-      new URL('/dashboard?success=twitter_connected', req.url)
+      new URL('/dashboard?success=twitter_connected', 'http://localhost:3000')
     );
 
     response.headers.set(

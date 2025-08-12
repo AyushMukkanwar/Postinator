@@ -43,9 +43,22 @@ export class UserRepository implements IUserRepository {
         socialAccounts: {
           where: { isActive: true },
           orderBy: { createdAt: 'desc' },
+          select: {
+            id: true,
+            platform: true,
+            platformId: true,
+            username: true,
+            displayName: true,
+            avatar: true,
+            expiresAt: true,
+            isActive: true,
+            createdAt: true,
+            userId: true,
+          },
         },
       },
     });
+    console.log('User from backend = ', user);
     if (!user) throw new NotFoundException(`User with ID ${id} not found`);
     return user;
   }
@@ -57,6 +70,18 @@ export class UserRepository implements IUserRepository {
         socialAccounts: {
           where: { isActive: true },
           orderBy: { createdAt: 'desc' },
+          select: {
+            id: true,
+            platform: true,
+            platformId: true,
+            username: true,
+            displayName: true,
+            avatar: true,
+            expiresAt: true,
+            isActive: true,
+            createdAt: true,
+            userId: true,
+          },
         },
       },
     });

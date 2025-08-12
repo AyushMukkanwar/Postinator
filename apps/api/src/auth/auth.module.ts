@@ -34,10 +34,23 @@ import { DatabaseModule } from 'src/database/database.module';
     {
       provide: 'SUPABASE_CLIENT',
       useFactory: (configService: ConfigService) => {
-        return createClient(
-          configService.get<string>('SUPABASE_URL')!,
-          configService.get<string>('SUPABASE_SERVICE_KEY')!
+        const supabaseUrl = configService.get<string>('SUPABASE_URL');
+        if (!supabaseUrl) {
+          throw new Error(
+            'SUPABASE_URL is not defined in environment variables.'
+          );
+        }
+
+        const supabaseSecretKey = configService.get<string>(
+          'SUPABASE_SECRET_KEY'
         );
+        if (!supabaseSecretKey) {
+          throw new Error(
+            'SUPABASE_SECRET_KEY is not defined in environment variables.'
+          );
+        }
+
+        return createClient(supabaseUrl, supabaseSecretKey);
       },
       inject: [ConfigService],
     },

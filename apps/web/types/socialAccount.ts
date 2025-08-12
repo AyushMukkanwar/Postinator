@@ -20,4 +20,5 @@ export interface SocialAccount {
   avatar?: string | null;
   isActive: boolean;
   userId: string;
+  expiresAt?: string | null;
 }

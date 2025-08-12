@@ -21,6 +21,53 @@ export class SocialAccountService {
     private readonly userService: UserService
   ) {}
 
+  async upsert(createSocialAccountDto: CreateSocialAccountDto, userId: string) {
+    const { platform, accessToken, refreshToken, expiresIn, ...rest } =
+      createSocialAccountDto;
+
+    const encryptedAccessToken = this.encryptionService.encrypt(accessToken);
+    const encryptedRefreshToken = refreshToken
+      ? this.encryptionService.encrypt(refreshToken)
+      : null;
+
+    const data: Prisma.SocialAccountUncheckedCreateInput = {
+      ...rest,
+      platform,
+      accessToken: encryptedAccessToken,
+      refreshToken: encryptedRefreshToken,
+      expiresAt: expiresIn ? new Date(Date.now() + expiresIn * 1000) : null,
+      userId,
+    };
+
+    const socialAccount = await this.socialAccountRepository.upsert({
+      where: { userId_platform: { userId, platform } },
+      update: data,
+      create: data,
+    });
+
+    if (!socialAccount) {
+      throw new NotFoundException('Social account not found after upsert');
+    }
+
+    // Decrypt tokens before returning to the client
+    socialAccount.accessToken = this.encryptionService.decrypt(
+      socialAccount.accessToken
+    );
+    if (socialAccount.refreshToken) {
+      socialAccount.refreshToken = this.encryptionService.decrypt(
+        socialAccount.refreshToken
+      );
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const {
+      accessToken: removedAccessToken,
+      refreshToken: removedRefreshToken,
+      ...result
+    } = socialAccount;
+    return result;
+  }
+
   async create(createSocialAccountDto: CreateSocialAccountDto, userId: string) {
     const { platform, accessToken, refreshToken, ...rest } =
       createSocialAccountDto;
@@ -68,7 +115,13 @@ export class SocialAccountService {
         );
       }
 
-      return newAccount;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const {
+        accessToken: removedAccessToken,
+        refreshToken: removedRefreshToken,
+        ...result
+      } = newAccount;
+      return result;
     } catch (error) {
       console.error(error);
       throw error;
@@ -91,7 +144,13 @@ export class SocialAccountService {
           account.refreshToken
         );
       }
-      return account;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const {
+        accessToken: removedAccessToken,
+        refreshToken: removedRefreshToken,
+        ...result
+      } = account;
+      return result;
     });
   }
 
@@ -111,16 +170,27 @@ export class SocialAccountService {
       );
     }
 
-    return socialAccount;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const {
+      accessToken: removedAccessToken,
+      refreshToken: removedRefreshToken,
+      ...result
+    } = socialAccount;
+    return result;
   }
 
   async update(id: string, updateSocialAccountDto: UpdateSocialAccountDto) {
-    const { accessToken, refreshToken, ...rest } = updateSocialAccountDto;
+    const { accessToken, refreshToken, expiresIn, ...rest } =
+      updateSocialAccountDto;
 
     const dataToUpdate: Prisma.SocialAccountUpdateInput = { ...rest };
 
     if (accessToken) {
       dataToUpdate.accessToken = this.encryptionService.encrypt(accessToken);
+    }
+
+    if (expiresIn) {
+      dataToUpdate.expiresAt = new Date(Date.now() + expiresIn * 1000);
     }
 
     if (refreshToken) {
@@ -142,7 +212,13 @@ export class SocialAccountService {
       );
     }
 
-    return updatedAccount;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const {
+      accessToken: removedAccessToken,
+      refreshToken: removedRefreshToken,
+      ...result
+    } = updatedAccount;
+    return result;
   }
 
   async remove(id: string) {

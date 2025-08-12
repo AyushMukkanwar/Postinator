@@ -2,8 +2,7 @@
 
 import { useEffect } from 'react';
 import { useUserStore } from '@/store/userStore';
-import { User } from '@/types/user';
-import { exchangeToken } from '@/actions/auth';
+import { getUser } from '@/actions/user';
 
 export default function InitUser() {
   const { setUser } = useUserStore();
@@ -11,7 +10,8 @@ export default function InitUser() {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const user: User | null = await exchangeToken();
+        const user = await getUser();
+        console.log('User = ', user);
         if (user) {
           setUser(user);
         }

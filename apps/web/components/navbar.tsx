@@ -122,7 +122,6 @@ export function NavBar({ onMenuClick }: NavBarProps) {
               variant="ghost"
               size="icon"
               onClick={() => {
-                console.log('NavBar: Menu button clicked');
                 onMenuClick();
               }}
               className="h-9 w-9 hover:bg-gradient-to-r hover:from-yellow-400/10 hover:to-orange-500/10"

@@ -10,6 +10,7 @@ import { Response } from 'express';
 import { AuthService, EnhancedTokenResponse } from './auth.service';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { IsNotEmpty, IsString } from 'class-validator';
+import { ConfigService } from '@nestjs/config';
 
 // DTOs for request validation
 export class ExchangeTokenDto {
@@ -30,12 +31,16 @@ export interface AuthResponse {
     id: string;
     email: string;
   };
+  token: string;
 }
 
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly configService: ConfigService
+  ) {}
 
   @Post('exchange-token')
   @HttpCode(HttpStatus.OK)
@@ -69,11 +74,12 @@ export class AuthController {
     response.cookie('access_token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV !== 'development',
-      sameSite: 'strict',
+      sameSite: 'lax',
       path: '/',
+      domain: this.configService.get<string>('COOKIE_DOMAIN') || 'localhost',
     });
 
-    return { user };
+    return { user, token };
   }
 
   @Post('refresh-token')
@@ -106,10 +112,11 @@ export class AuthController {
     response.cookie('access_token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV !== 'development',
-      sameSite: 'strict',
+      sameSite: 'lax',
       path: '/',
+      domain: this.configService.get<string>('COOKIE_DOMAIN') || 'localhost',
     });
 
-    return { user };
+    return { user, token };
   }
 }

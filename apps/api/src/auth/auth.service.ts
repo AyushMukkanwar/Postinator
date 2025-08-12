@@ -11,6 +11,8 @@ export interface EnhancedTokenResponse {
   user: {
     id: string;
     email: string;
+    name: string | null;
+    avatar: string | null;
   };
 }
 
@@ -27,36 +29,32 @@ export class AuthService {
     supabaseToken: string
   ): Promise<EnhancedTokenResponse> {
     try {
-      const jwtSecret = this.configService.get<string>('SUPABASE_JWT_SECRET');
-      if (!jwtSecret) {
-        throw new Error(
-          'SUPABASE_JWT_SECRET is not defined in environment variables.'
-        );
-      }
+      const {
+        data: { user },
+        error,
+      } = await this.supabase.auth.getUser(supabaseToken);
 
-      const decoded = jwt.verify(supabaseToken, jwtSecret);
-
-      if (typeof decoded !== 'object' || !decoded.sub || !decoded.email) {
-        throw new UnauthorizedException('Invalid token payload');
+      if (error || !user) {
+        throw new UnauthorizedException('Invalid Supabase token');
       }
 
       // 2.1 Find User
-      let dbUser = await this.userService.getUserByEmail(
-        decoded.email as string
-      );
+      let dbUser = await this.userService.getUserByEmail(user.email as string);
 
       //   2.2 If not User create one
       if (!dbUser) {
         const createUserInput: Prisma.UserCreateInput = {
-          email: decoded.email as string,
-          supabaseId: decoded.sub as string,
+          email: user.email as string,
+          supabaseId: user.id as string,
+          name: user.user_metadata.full_name,
+          avatar: user.user_metadata.avatar_url,
         };
         dbUser = await this.userService.createUser(createUserInput);
       }
 
       // 3. Create enhanced JWT with your database user info
       const enhancedPayload = {
-        supabaseId: decoded.sub as string,
+        supabaseId: user.id as string,
         userId: dbUser.id,
         email: dbUser.email,
         // Add other fields you need (role, etc.)
@@ -72,6 +70,8 @@ export class AuthService {
         user: {
           id: dbUser.id,
           email: dbUser.email,
+          name: dbUser.name,
+          avatar: dbUser.avatar,
           // Return other safe user data
         },
       };

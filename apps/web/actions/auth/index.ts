@@ -1,7 +1,8 @@
 'use server';
 
-import axios from '@/lib/axios';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+
+const API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL;
 
 export const exchangeToken = async () => {
   const supabase = await createSupabaseServerClient();
@@ -14,10 +15,19 @@ export const exchangeToken = async () => {
   }
 
   try {
-    const response = await axios.post('/auth/exchange-token', {
-      supabaseToken: session.access_token,
+    const response = await fetch(`${API_URL}/auth/exchange-token`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ supabaseToken: session.access_token }),
     });
-    return response.data;
+
+    if (!response.ok) {
+      throw new Error('Token exchange failed');
+    }
+
+    return await response.json();
   } catch (error) {
     console.error('Token exchange failed:', error);
     return null;
@@ -26,14 +36,19 @@ export const exchangeToken = async () => {
 
 export const exchangeTokenOnCallback = async (accessToken: string) => {
   try {
-    const payload = { supabaseToken: accessToken };
-
-    const response = await axios.post('/auth/exchange-token', payload, {
+    const response = await fetch(`${API_URL}/auth/exchange-token`, {
+      method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
+      body: JSON.stringify({ supabaseToken: accessToken }),
     });
-    return response.data;
+
+    if (!response.ok) {
+      throw new Error('Token exchange failed');
+    }
+
+    return await response.json();
   } catch (error) {
     throw error;
   }
