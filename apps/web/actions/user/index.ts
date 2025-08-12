@@ -1,8 +1,26 @@
 'use server';
 
-import { axiosAuth } from '@/lib/axios';
-import { createSupabaseServerClient } from '@/lib/supabase/server';
+import {
+  authenticatedGet,
+  authenticatedPut,
+  authenticatedDelete,
+  getCurrentUserId,
+} from '@/lib/auth/auth-fetch';
 import { User } from '@/types/user';
+
+export const getUser = async (): Promise<User | null> => {
+  try {
+    const userId = await getCurrentUserId();
+    const response = await authenticatedGet(`/users/${userId}/social-accounts`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch user');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Failed to get user:', error);
+    return null;
+  }
+};
 
 export const updateUser = async (
   id: string,
@@ -13,39 +31,19 @@ export const updateUser = async (
     timezone?: string;
   }
 ): Promise<User> => {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
-  if (!session) {
-    throw new Error('Not authenticated');
+  const response = await authenticatedPut(`/users/${id}`, user);
+  if (!response.ok) {
+    // You might want to handle this more gracefully
+    throw new Error('Failed to update user');
   }
-
-  const response = await axiosAuth.put(`/users/${id}`, user, {
-    headers: {
-      Authorization: `Bearer ${session.access_token}`,
-    },
-  });
-
-  return response.data;
+  return await response.json();
 };
 
 export const deleteUser = async (id: string) => {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
-  if (!session) {
-    throw new Error('Not authenticated');
+  const response = await authenticatedDelete(`/users/${id}`);
+  if (!response.ok) {
+    // You might want to handle this more gracefully
+    throw new Error('Failed to delete user');
   }
-
-  const response = await axiosAuth.delete(`/users/${id}`, {
-    headers: {
-      Authorization: `Bearer ${session.access_token}`,
-    },
-  });
-
-  return response.data;
+  return await response.json();
 };

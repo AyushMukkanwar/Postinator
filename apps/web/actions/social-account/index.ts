@@ -1,67 +1,46 @@
 'use server';
 
-import { axiosAuth } from '@/lib/axios';
-import { createSupabaseServerClient } from '@/lib/supabase/server';
+import {
+  authenticatedGet,
+  authenticatedPost,
+  authenticatedPatch,
+  authenticatedDelete,
+  getCurrentUserId,
+} from '@/lib/auth/auth-fetch';
 import { SocialAccount, Platform } from '@/types/socialAccount';
 
-export const createSocialAccount = async (socialAccount: {
+export const upsertSocialAccount = async (socialAccount: {
   platform: Platform;
   platformId: string;
   username: string;
   accessToken: string;
   refreshToken?: string;
   isActive?: boolean;
+  expiresIn?: number;
 }) => {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+  const userId = await getCurrentUserId();
+  const response = await authenticatedPost('/social-account/upsert', {
+    ...socialAccount,
+    userId,
+  });
 
-  if (!session) {
-    throw new Error('Not authenticated');
+  if (!response.ok) {
+    throw new Error('Failed to create social account');
   }
 
-  const response = await axiosAuth.post(
-    '/social-account',
-    { ...socialAccount, userId: session.user.id },
-    {
-      headers: {
-        Authorization: `Bearer ${session.access_token}`,
-      },
-    }
-  );
-
-  return response.data;
+  return await response.json();
 };
 
 export const getSocialAccountById = async (
   id: string
 ): Promise<SocialAccount> => {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+  const response = await authenticatedGet(`/social-account/${id}`);
 
-  if (!session) {
-    throw new Error('Not authenticated');
+  if (!response.ok) {
+    throw new Error('Failed to get social account');
   }
 
-  try {
-    const response = await axiosAuth.get(`/social-account/${id}`, {
-      headers: {
-        Authorization: `Bearer ${session.access_token}`,
-      },
-    });
-
-    return response.data;
-  } catch (error: any) {
-    console.error('Error in getSocialAccountById():', {
-      message: error.message,
-      status: error.response?.status,
-      data: error.response?.data,
-    });
-    throw error;
-  }
+  return await response.json();
 };
 
 export const updateSocialAccount = async (
@@ -71,71 +50,34 @@ export const updateSocialAccount = async (
     isActive?: boolean;
   }
 ): Promise<SocialAccount> => {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
-  if (!session) {
-    throw new Error('Not authenticated');
-  }
-
-  const response = await axiosAuth.patch(
+  const response = await authenticatedPatch(
     `/social-account/${id}`,
-    socialAccount,
-    {
-      headers: {
-        Authorization: `Bearer ${session.access_token}`,
-      },
-    }
+    socialAccount
   );
 
-  return response.data;
+  if (!response.ok) {
+    throw new Error('Failed to update social account');
+  }
+
+  return await response.json();
 };
 
 export const deleteSocialAccount = async (id: string) => {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+  const response = await authenticatedDelete(`/social-account/${id}`);
 
-  if (!session) {
-    throw new Error('Not authenticated');
+  if (!response.ok) {
+    throw new Error('Failed to delete social account');
   }
 
-  const response = await axiosAuth.delete(`/social-account/${id}`, {
-    headers: {
-      Authorization: `Bearer ${session.access_token}`,
-    },
-  });
-
-  return response.data;
+  return await response.json();
 };
 
 export const getSocialAccounts = async (): Promise<SocialAccount[]> => {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+  const response = await authenticatedGet('/social-account/user/me');
 
-  if (!session) {
-    throw new Error('Not authenticated');
+  if (!response.ok) {
+    throw new Error('Failed to get social accounts');
   }
 
-  try {
-    const response = await axiosAuth.get('/social-account/user/me', {
-      headers: {
-        Authorization: `Bearer ${session.access_token}`,
-      },
-    });
-
-    return response.data;
-  } catch (error: any) {
-    console.error('Error in getSocialAccounts():', {
-      message: error.message,
-      status: error.response?.status,
-      data: error.response?.data,
-    });
-    throw error;
-  }
+  return await response.json();
 };

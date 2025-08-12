@@ -25,25 +25,21 @@ import { User } from 'src/auth/decorators/user.decorator';
 export class SocialAccountController {
   constructor(private readonly socialAccountService: SocialAccountService) {}
 
-  @Post()
-  @ApiOperation({ summary: 'Create a new social account' })
+  @Post('upsert')
+  @ApiOperation({ summary: 'Create or update a social account' })
   @ApiResponse({
-    status: 201,
-    description: 'Social account created successfully',
+    status: 200,
+    description: 'Social account created or updated successfully',
     type: SocialAccountEntity,
   })
   @ApiResponse({ status: 400, description: 'Bad request' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({
-    status: 409,
-    description: 'Social account already exists for this platform',
-  })
-  create(
+  upsert(
     @Body() createSocialAccountDto: CreateSocialAccountDto,
     @User() user: UserModel
   ) {
     const userId = user.id;
-    return this.socialAccountService.create(createSocialAccountDto, userId);
+    return this.socialAccountService.upsert(createSocialAccountDto, userId);
   }
 
   @Get()

@@ -13,11 +13,18 @@ export interface ISocialAccountRepository
   findUnique(
     where: Prisma.SocialAccountWhereUniqueInput
   ): Promise<SocialAccount | null>;
+  upsert(args: Prisma.SocialAccountUpsertArgs): Promise<SocialAccount | null>;
 }
 
 @Injectable()
 export class SocialAccountRepository implements ISocialAccountRepository {
   constructor(private readonly prisma: PrismaService) {}
+
+  async upsert(
+    args: Prisma.SocialAccountUpsertArgs
+  ): Promise<SocialAccount | null> {
+    return this.prisma.socialAccount.upsert(args);
+  }
 
   async create(data: Prisma.SocialAccountCreateInput): Promise<SocialAccount> {
     return this.prisma.socialAccount.create({

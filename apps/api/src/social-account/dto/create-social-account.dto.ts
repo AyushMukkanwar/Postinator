@@ -3,6 +3,7 @@ import {
   IsBoolean,
   IsDateString,
   IsEnum,
+  IsNumber,
   IsOptional,
   IsString,
 } from 'class-validator';
@@ -60,13 +61,13 @@ export class CreateSocialAccountDto {
   refreshToken?: string;
 
   @ApiProperty({
-    description: 'Token expiration date',
+    description: 'Token expiration in seconds',
     required: false,
-    example: '2024-06-01T00:00:00.000Z',
+    example: 3600,
   })
   @IsOptional()
-  @IsDateString()
-  expiresAt?: string;
+  @IsNumber()
+  expiresIn?: number;
 
   @ApiProperty({ description: 'Whether account is active', example: true })
   @IsBoolean()

@@ -13,9 +13,11 @@ services:
       - ./packages:/app/packages
       - ./turbo.json:/app/turbo.json
       - ./package.json:/app/package.json
-      # Prevent node_modules from being overwritten
+      # Prevent node_modules from being overwritten by local mounts
       - /app/node_modules
-      - web_node_modules:/app/apps/web/node_modules
+      - /app/apps/web/node_modules
+    env_file:
+      - .env
     environment:
       - NODE_ENV=development
     command: pnpm dev --filter=web
@@ -39,6 +41,8 @@ services:
       # Prevent node_modules from being overwritten
       - /app/node_modules
       - /app/apps/api/node_modules
+    env_file:
+      - .env
     environment:
       - NODE_ENV=development
     command: pnpm dev --filter=api
