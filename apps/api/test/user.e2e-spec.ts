@@ -3,7 +3,7 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import * as request from 'supertest';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { AppModule } from 'src/app.module';
-import { DatabaseTestContainer } from './testcontainers-setup';
+import { TestContainers } from './testcontainers-setup';
 import { execSync } from 'child_process';
 import { getTestAccessToken } from './helpers/get-test-token';
 import { PrismaExceptionFilter } from 'src/filters/prisma-exception.filter';
@@ -13,7 +13,7 @@ import { User } from 'generated/prisma';
 describe('User e2e tests', () => {
   let app: INestApplication;
   let prisma: PrismaService;
-  let dbContainer: DatabaseTestContainer;
+  let testContainers: TestContainers;
 
   // User and token for tests that need a pre-existing user
   let testUser: User;
@@ -21,12 +21,12 @@ describe('User e2e tests', () => {
 
   beforeAll(async () => {
     // Start database container
-    dbContainer = new DatabaseTestContainer();
-    const connectionString = await dbContainer.start();
+    testContainers = new TestContainers();
+    const { dbUri } = await testContainers.start();
 
     // Run migrations
     execSync('npx prisma db push', {
-      env: { ...process.env, DATABASE_URL: connectionString },
+      env: { ...process.env, DATABASE_URL: dbUri },
       stdio: 'inherit',
     });
 
@@ -71,7 +71,7 @@ describe('User e2e tests', () => {
   afterAll(async () => {
     await app.close();
     await prisma.$disconnect();
-    await dbContainer.stop();
+    await testContainers.stop();
   });
 
   // Create a clean user and token before each test

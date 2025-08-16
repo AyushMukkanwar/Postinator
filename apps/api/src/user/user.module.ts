@@ -5,12 +5,14 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { DatabaseModule } from 'src/database/database.module';
 import { UserController } from './user.controller';
 import { SocialAccountModule } from 'src/social-account/social-account.module';
+import { AppCacheModule } from 'src/cache/cache.module';
 
 @Module({
   imports: [
     PrismaModule,
     DatabaseModule,
     forwardRef(() => SocialAccountModule),
+    AppCacheModule,
   ],
   controllers: [UserController],
   providers: [UserService],

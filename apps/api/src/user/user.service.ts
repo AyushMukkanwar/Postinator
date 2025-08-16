@@ -1,11 +1,15 @@
-// src/modules/user/user.service.ts
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { UserRepository } from 'src/database/repositories/user.repository';
 import { User, Prisma } from 'generated/prisma';
+import { Cache } from 'cache-manager';
 
 @Injectable()
 export class UserService {
-  constructor(private readonly userRepository: UserRepository) {}
+  constructor(
+    private readonly userRepository: UserRepository,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache
+  ) {}
 
   async createUser(data: Prisma.UserCreateInput): Promise<User> {
     // let repository handle unique‐constraint conflicts
@@ -13,10 +17,18 @@ export class UserService {
   }
 
   async getUserById(id: string): Promise<User> {
+    const cacheKey = `user:${id}`;
+    const cachedUser = await this.cacheManager.get<User>(cacheKey);
+    if (cachedUser) {
+      return cachedUser;
+    }
+
     const user = await this.userRepository.findById(id);
     if (!user) {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
+
+    await this.cacheManager.set(cacheKey, user);
     return user;
   }
 
@@ -53,13 +65,17 @@ export class UserService {
   }
 
   async updateUser(id: string, data: Prisma.UserUpdateInput): Promise<User> {
-    // repository.handleError will throw NotFoundException if id doesn’t exist
-    return this.userRepository.update(id, data);
+    const user = await this.userRepository.update(id, data);
+    const cacheKey = `user:${id}`;
+    await this.cacheManager.del(cacheKey);
+    return user;
   }
 
   async deleteUser(id: string): Promise<User> {
-    // same here—repository maps P2025 → NotFoundException
-    return this.userRepository.delete(id);
+    const user = await this.userRepository.delete(id);
+    const cacheKey = `user:${id}`;
+    await this.cacheManager.del(cacheKey);
+    return user;
   }
 
   async getUsers(params?: {

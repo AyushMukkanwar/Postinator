@@ -12,6 +12,7 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { UserService } from 'src/user/user.service';
 import { DatabaseModule } from 'src/database/database.module';
+import { AppCacheModule } from 'src/cache/cache.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { DatabaseModule } from 'src/database/database.module';
     ConfigModule,
     forwardRef(() => UserModule),
     DatabaseModule,
+    AppCacheModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => {
