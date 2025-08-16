@@ -8,7 +8,7 @@
   },
   "collectCoverageFrom": ["src/**/*.(t|j)s"],
   "coverageDirectory": "../coverage",
-  "testTimeout": 90000,
+  "testTimeout": 180000,
   "maxWorkers": 1,
   "moduleNameMapper": {
     "^src/(.*)$": "<rootDir>/src/$1",

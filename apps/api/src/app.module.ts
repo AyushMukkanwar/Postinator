@@ -9,6 +9,8 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { SocialAccountModule } from './social-account/social-account.module';
 import { EncryptionModule } from './encryption/encryption.module';
+import { PostQueueModule } from './queue/post-queue.module';
+import { AppCacheModule } from './cache/cache.module';
 
 @Module({
   imports: [
@@ -32,6 +34,8 @@ import { EncryptionModule } from './encryption/encryption.module';
     UserModule,
     SocialAccountModule,
     EncryptionModule,
+    PostQueueModule,
+    AppCacheModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],

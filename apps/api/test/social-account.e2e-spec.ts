@@ -5,7 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import * as request from 'supertest';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { AppModule } from 'src/app.module';
-import { DatabaseTestContainer } from './testcontainers-setup';
+import { TestContainers } from './testcontainers-setup';
 import { execSync } from 'child_process';
 import { getTestAccessToken } from './helpers/get-test-token';
 import { EncryptionService } from 'src/encryption/encryption.service';
@@ -13,7 +13,7 @@ import { EncryptionService } from 'src/encryption/encryption.service';
 describe('SocialAccount e2e tests', () => {
   let app: INestApplication;
   let prisma: PrismaService;
-  let dbContainer: DatabaseTestContainer;
+  let testContainers: TestContainers;
   let userA: User;
   let userB: User;
   let tokenA: string;
@@ -61,10 +61,10 @@ describe('SocialAccount e2e tests', () => {
     await app.init();
 
     // 6. Setup database
-    dbContainer = new DatabaseTestContainer();
-    const connectionString = await dbContainer.start();
+    testContainers = new TestContainers();
+    const { dbUri } = await testContainers.start();
     execSync('npx prisma db push', {
-      env: { ...process.env, DATABASE_URL: connectionString },
+      env: { ...process.env, DATABASE_URL: dbUri },
       stdio: 'inherit',
     });
   });
@@ -72,7 +72,7 @@ describe('SocialAccount e2e tests', () => {
   afterAll(async () => {
     await app.close();
     await prisma.$disconnect();
-    await dbContainer.stop();
+    await testContainers.stop();
   });
 
   beforeEach(async () => {
@@ -102,7 +102,7 @@ describe('SocialAccount e2e tests', () => {
 
   it('/social-account POST - should create a social account', async () => {
     const response = await request(app.getHttpServer())
-      .post('/social-account')
+      .post('/social-account/upsert')
       .set('Authorization', `Bearer ${tokenA}`)
       .send({
         platform: Platform.TWITTER,

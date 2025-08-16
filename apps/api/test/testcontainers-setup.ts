@@ -3,43 +3,56 @@ import {
   PostgreSqlContainer,
   StartedPostgreSqlContainer,
 } from '@testcontainers/postgresql';
+import { RedisContainer, StartedRedisContainer } from '@testcontainers/redis';
 
-export class DatabaseTestContainer {
-  private container?: StartedPostgreSqlContainer;
+export class TestContainers {
+  private pgContainer?: StartedPostgreSqlContainer;
+  private redisContainer?: StartedRedisContainer;
 
-  async start(): Promise<string> {
-    console.log('🟢 Starting test container…');
-    this.container = await new PostgreSqlContainer('postgres:15')
+  async start(): Promise<{ dbUri: string; redisUrl: string }> {
+    console.log('🟢 Starting test containers…');
+    this.pgContainer = await new PostgreSqlContainer('postgres:15')
       .withDatabase('testdb')
       .withUsername('testuser')
       .withPassword('testpass')
       .start();
 
-    const uri = this.container.getConnectionUri();
-    console.log(`🟢 Container started at ${uri}`);
-    process.env.DATABASE_URL = uri;
-    return uri;
+    this.redisContainer = await new RedisContainer('redis:alpine').start();
+
+    const dbUri = this.pgContainer.getConnectionUri();
+    const redisUrl = this.redisContainer.getConnectionUrl();
+
+    console.log(`🟢 Postgres container started at ${dbUri}`);
+    console.log(`🟢 Redis container started at ${redisUrl}`);
+
+    process.env.DATABASE_URL = dbUri;
+    process.env.REDIS_URL = redisUrl;
+
+    return { dbUri, redisUrl };
   }
 
   async stop(): Promise<void> {
-    if (!this.container) {
-      console.warn('⚠️  No container instance to stop');
-      return;
-    }
-
+    console.log('🛑 Stopping test containers…');
     try {
-      console.log('🛑 Stopping test container…');
-      await this.container.stop();
-      console.log('✅ Container stopped & removed');
+      await this.pgContainer?.stop();
+      await this.redisContainer?.stop();
+      console.log('✅ Containers stopped & removed');
     } catch (err) {
-      console.error('❌ Error stopping container:', err);
+      console.error('❌ Error stopping containers:', err);
     }
   }
 
-  getConnectionString(): string {
-    if (!this.container) {
-      throw new Error('Container not started yet');
+  getDbConnectionString(): string {
+    if (!this.pgContainer) {
+      throw new Error('Postgres container not started yet');
     }
-    return this.container.getConnectionUri();
+    return this.pgContainer.getConnectionUri();
+  }
+
+  getRedisUrl(): string {
+    if (!this.redisContainer) {
+      throw new Error('Redis container not started yet');
+    }
+    return this.redisContainer.getConnectionUrl();
   }
 }

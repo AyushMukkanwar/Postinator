@@ -59,7 +59,6 @@ export class SocialAccountService {
       );
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const {
       accessToken: removedAccessToken,
       refreshToken: removedRefreshToken,
@@ -115,7 +114,6 @@ export class SocialAccountService {
         );
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const {
         accessToken: removedAccessToken,
         refreshToken: removedRefreshToken,
@@ -144,7 +142,7 @@ export class SocialAccountService {
           account.refreshToken
         );
       }
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
       const {
         accessToken: removedAccessToken,
         refreshToken: removedRefreshToken,
@@ -170,7 +168,6 @@ export class SocialAccountService {
       );
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const {
       accessToken: removedAccessToken,
       refreshToken: removedRefreshToken,
@@ -212,7 +209,6 @@ export class SocialAccountService {
       );
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const {
       accessToken: removedAccessToken,
       refreshToken: removedRefreshToken,
