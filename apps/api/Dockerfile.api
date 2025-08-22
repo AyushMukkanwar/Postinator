@@ -1,10 +1,13 @@
 # Dockerfile.api (for NestJS app)
-FROM node:20-alpine
+FROM node:20-slim
 
 WORKDIR /app
 
 # Install pnpm
 RUN npm install -g pnpm
+
+# Install build tools for native addons and curl for health checks
+RUN apt-get update && apt-get install -y python3 make g++ curl
 
 # Copy root package files first for better caching
 COPY package*.json ./
@@ -18,7 +21,7 @@ COPY apps/api/package*.json ./apps/api/
 COPY packages ./packages
 
 # Install dependencies for api and its dependencies
-RUN pnpm install --filter=api... --frozen-lockfile
+RUN pnpm install --filter=api...
 
 # Copy source code
 COPY apps/api ./apps/api

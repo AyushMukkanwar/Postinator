@@ -114,6 +114,7 @@ describe('Post e2e tests', () => {
       .send(createPostDto)
       .expect(201);
 
+    expect(response.body.id).toBeDefined();
     expect(response.body).toMatchObject({
       content: createPostDto.content,
       userId: testUser.id,
@@ -121,7 +122,14 @@ describe('Post e2e tests', () => {
   });
 
   it('/post POST - should return 401 for request without a token', async () => {
-    await request(app.getHttpServer()).post('/post').send({}).expect(401);
+    await request(app.getHttpServer())
+      .post('/post')
+      .send({})
+      .expect(401)
+      .expect({
+        message: 'Unauthorized',
+        statusCode: 401,
+      });
   });
 
   it('/post POST - should return 401 for request with an invalid token', async () => {
@@ -129,14 +137,21 @@ describe('Post e2e tests', () => {
       .post('/post')
       .set('Authorization', 'Bearer invalid-token')
       .send({})
-      .expect(401);
+      .expect(401)
+      .expect({
+        message: 'Unauthorized',
+        statusCode: 401,
+      });
   });
 
   it('/post POST - should return 400 for request with an empty body', async () => {
-    await request(app.getHttpServer())
+    const response = await request(app.getHttpServer())
       .post('/post')
       .set('Authorization', `Bearer ${token}`)
       .send({})
       .expect(400);
+
+    expect(Array.isArray(response.body.message)).toBe(true);
+    expect(response.body.message.length).toBeGreaterThan(0);
   });
 });

@@ -20,13 +20,13 @@ interface SidePanelProps {
 
 export function SidePanel({ isOpen, onClose }: SidePanelProps) {
   const [mounted, setMounted] = useState(false);
-  const { user } = useUserStore();
+  const { user, loading } = useUserStore();
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  if (!mounted || !user) {
+  if (!mounted || loading) {
     return null;
   }
 

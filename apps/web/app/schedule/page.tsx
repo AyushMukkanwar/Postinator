@@ -1,8 +1,6 @@
 import { checkAuth } from '../(auth)/actions';
 
 export default async function SchedulePage() {
-  await checkAuth();
-
   return (
     <div className="container mx-auto py-8">
       <div className="text-center">

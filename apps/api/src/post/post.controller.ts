@@ -9,8 +9,11 @@ export class PostController {
 
   @UseGuards(AuthGuard('jwt'))
   @Post()
-  create(@Body() createPostDto: CreatePostDto, @Req() req) {
+  async create(@Body() createPostDto: CreatePostDto, @Req() req) {
+    console.log('Received request to create post:', createPostDto);
     const userId = req.user.id;
-    return this.postService.create(userId, createPostDto);
+    const result = await this.postService.create(userId, createPostDto);
+    console.log('Post creation result from service:', result);
+    return result;
   }
 }

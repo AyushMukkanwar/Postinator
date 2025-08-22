@@ -32,24 +32,47 @@ export async function authenticatedFetch(
   try {
     // Step 1: Try to get existing custom JWT
     let customJwt = await getCustomJwt();
+    console.log(
+      'authenticatedFetch: customJwt after getCustomJwt:',
+      customJwt ? 'present' : 'null'
+    );
 
     // Step 2: If no valid JWT, try to get one via token exchange
     if (!customJwt) {
+      console.log('authenticatedFetch: No custom JWT, attempting exchange...');
       customJwt = await exchangeTokenForCustomJwt();
+      console.log(
+        'authenticatedFetch: customJwt after exchange:',
+        customJwt ? 'present' : 'null'
+      );
     }
 
     // Step 3: Make the request with the custom JWT
+    const headers = new Headers(options.headers);
+    headers.set('Content-Type', 'application/json');
+    headers.set('Authorization', `Bearer ${customJwt}`);
+
+    console.log('authenticatedFetch: Making fetch request to:', fullUrl);
+    console.log('authenticatedFetch: Request options:', {
+      ...options,
+      headers: headers,
+    });
+
     const response = await fetch(fullUrl, {
       ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-        Authorization: `Bearer ${customJwt}`,
-      },
+      headers: headers,
     });
+
+    console.log(
+      'authenticatedFetch: Received response with status:',
+      response.status
+    );
 
     // Step 4: Handle token expiry (401 responses)
     if (response.status === 401) {
+      console.log(
+        'authenticatedFetch: Received 401, attempting token refresh...'
+      );
       // Token might be expired, try to refresh once
       customJwt = await exchangeTokenForCustomJwt();
 
@@ -62,12 +85,16 @@ export async function authenticatedFetch(
           Authorization: `Bearer ${customJwt}`,
         },
       });
-
+      console.log(
+        'authenticatedFetch: Retried request status:',
+        retryResponse.status
+      );
       return retryResponse;
     }
 
     return response;
   } catch (error) {
+    console.error('authenticatedFetch: Error during fetch:', error);
     if (error instanceof AuthenticationError) {
       throw error;
     }
@@ -110,6 +137,9 @@ async function getCustomJwt(): Promise<string | null> {
  * Exchange Supabase token for custom JWT via your backend
  */
 async function exchangeTokenForCustomJwt(): Promise<string> {
+  console.log(
+    '********Attempting to exchange Supabase token for custom JWT********'
+  );
   try {
     // Get Supabase session
     const supabase = await createSupabaseServerClient();

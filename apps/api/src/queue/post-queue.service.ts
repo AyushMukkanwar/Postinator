@@ -16,6 +16,10 @@ export class PostQueueService {
       );
     }
 
+    console.log('Adding job to Bull queue:', {
+      name: 'schedulePost',
+      data: { postId, scheduledFor },
+    });
     await this.postQueue.add(
       'schedulePost', // Job name
       { postId, scheduledFor }, // Job data
