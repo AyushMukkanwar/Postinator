@@ -6,20 +6,25 @@ import { SocialAccount } from '@/types/socialAccount';
 
 type UserState = {
   user: User | null;
+  loading: boolean;
   getUser: () => User | null;
   setUser: (user: Partial<User>) => void;
+  setLoading: (loading: boolean) => void;
   deleteUser: () => void;
   addOrUpdateSocialAccount: (socialAccount: SocialAccount) => void;
 };
 
 export const useUserStore = create<UserState>((set, get) => ({
   user: null,
+  loading: true,
   getUser: () => get().user,
   setUser: (user) =>
     set((state) => ({
       user: state.user ? { ...state.user, ...user } : (user as User),
+      loading: false,
     })),
-  deleteUser: () => set({ user: null }),
+  setLoading: (loading) => set({ loading }),
+  deleteUser: () => set({ user: null, loading: false }),
   addOrUpdateSocialAccount: (socialAccount) =>
     set((state) => {
       if (!state.user) return {};

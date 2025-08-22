@@ -133,9 +133,11 @@ export async function GET(req: NextRequest) {
 
     await upsertSocialAccount(socialAccountData);
     // Clear the OAuth cookies
-    const response = NextResponse.redirect(
-      new URL('/dashboard?success=twitter_connected', 'http://localhost:3000')
+    const redirectUrl = new URL(
+      '/dashboard?success=twitter_connected',
+      req.url
     );
+    const response = NextResponse.redirect(redirectUrl);
 
     response.headers.set(
       'Set-Cookie',

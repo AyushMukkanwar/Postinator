@@ -11,6 +11,7 @@ import { SocialAccountModule } from './social-account/social-account.module';
 import { EncryptionModule } from './encryption/encryption.module';
 import { PostQueueModule } from './queue/post-queue.module';
 import { AppCacheModule } from './cache/cache.module';
+import { HealthModule } from './health/health.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { AppCacheModule } from './cache/cache.module';
     EncryptionModule,
     PostQueueModule,
     AppCacheModule,
+    HealthModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],

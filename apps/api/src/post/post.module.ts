@@ -4,6 +4,7 @@ import { PostController } from './post.controller';
 import { BullModule } from '@nestjs/bull';
 import { DatabaseModule } from '../database/database.module';
 import { PostQueueModule } from '../queue/post-queue.module';
+import { AppCacheModule } from 'src/cache/cache.module';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { PostQueueModule } from '../queue/post-queue.module';
     }),
     DatabaseModule,
     forwardRef(() => PostQueueModule),
+    AppCacheModule,
   ],
   controllers: [PostController],
   providers: [PostService],

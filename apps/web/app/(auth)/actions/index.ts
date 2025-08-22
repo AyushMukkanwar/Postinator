@@ -58,8 +58,15 @@ export async function logout() {
 }
 
 export async function checkAuth() {
+  // console.log('**************************Server auth check starting...');
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.auth.getClaims();
+
+  // console.log('Server session:', data ? 'exists' : 'null');
+  // console.log('data = ', data);
+
+  // console.log('Server getClaims error:', error);
+
   if (error || !data?.claims) {
     redirect('/login');
   }

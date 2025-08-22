@@ -41,7 +41,6 @@ export class UserRepository implements IUserRepository {
       where: { id },
       include: {
         socialAccounts: {
-          where: { isActive: true },
           orderBy: { createdAt: 'desc' },
           select: {
             id: true,
@@ -68,7 +67,6 @@ export class UserRepository implements IUserRepository {
       where: { email },
       include: {
         socialAccounts: {
-          where: { isActive: true },
           orderBy: { createdAt: 'desc' },
           select: {
             id: true,
