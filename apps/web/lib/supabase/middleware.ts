@@ -41,7 +41,9 @@ export async function updateSession(request: NextRequest) {
 
   if (
     !user &&
-    !['/', '/login', '/register'].includes(request.nextUrl.pathname)
+    !['/', '/login', '/register', '/callback'].includes(
+      request.nextUrl.pathname
+    )
   ) {
     // no user, potentially respond by redirecting the user to the login page
     const url = request.nextUrl.clone();

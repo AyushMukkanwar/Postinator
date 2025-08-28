@@ -74,10 +74,6 @@ export default function LoginPage() {
       if (oauthError) {
         console.error('handleGoogleSignIn: Google Sign-In Error:', oauthError);
         setError(`Google Sign-In failed: ${oauthError.message}`);
-      } else {
-        console.log(
-          'handleGoogleSignIn: Google Sign-In initiated successfully.'
-        );
       }
     } catch (catchedError: unknown) {
       console.error(

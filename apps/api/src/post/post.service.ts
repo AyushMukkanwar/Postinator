@@ -51,10 +51,6 @@ export class PostService {
       socialAccount: { connect: { id: data.socialAccountId } },
     });
 
-    console.log('Adding post to queue:', {
-      postId: post.id,
-      scheduledFor: post.scheduledFor,
-    });
     await this.postQueueService.addPostToQueue(post.id, post.scheduledFor);
 
     await this.invalidateUserPostsCache(data.userId);

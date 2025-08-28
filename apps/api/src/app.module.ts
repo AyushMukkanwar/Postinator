@@ -1,4 +1,3 @@
-// apps/api/src/app.module.ts
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -9,9 +8,10 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { SocialAccountModule } from './social-account/social-account.module';
 import { EncryptionModule } from './encryption/encryption.module';
-import { PostQueueModule } from './queue/post-queue.module';
+import { BullModule } from '@nestjs/bullmq';
 import { AppCacheModule } from './cache/cache.module';
 import { HealthModule } from './health/health.module';
+import { PostQueueModule } from './queue/post-queue.module';
 
 @Module({
   imports: [
@@ -30,6 +30,12 @@ import { HealthModule } from './health/health.module';
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
+    }),
+    BullModule.forRoot({
+      connection: {
+        host: process.env.REDIS_HOST || 'localhost',
+        port: parseInt(process.env.REDIS_PORT || '6379', 10),
+      },
     }),
     AuthModule,
     UserModule,
