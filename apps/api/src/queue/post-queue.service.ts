@@ -1,6 +1,6 @@
-import { Injectable, Logger, Inject } from '@nestjs/common';
-import { Queue } from 'bull';
-import { InjectQueue } from '@nestjs/bull';
+import { Injectable, Logger } from '@nestjs/common';
+import { Queue } from 'bullmq';
+import { InjectQueue } from '@nestjs/bullmq';
 
 @Injectable()
 export class PostQueueService {
@@ -16,10 +16,6 @@ export class PostQueueService {
       );
     }
 
-    console.log('Adding job to Bull queue:', {
-      name: 'schedulePost',
-      data: { postId, scheduledFor },
-    });
     await this.postQueue.add(
       'schedulePost', // Job name
       { postId, scheduledFor }, // Job data
@@ -39,10 +35,12 @@ export class PostQueueService {
     postId: string,
     newScheduledFor: Date
   ): Promise<void> {
-    // Remove the old job first
-    const oldJob = await this.postQueue.getJob(postId);
-    if (oldJob) {
-      await oldJob.remove();
+    // In BullMQ, you remove jobs by their ID from the queue.
+    // First, get all repeatable jobs, then find and remove the one with the matching key.
+    const repeatableJobs = await this.postQueue.getRepeatableJobs();
+    const jobToRemove = repeatableJobs.find((job) => job.id === postId);
+    if (jobToRemove) {
+      await this.postQueue.removeRepeatableByKey(jobToRemove.key);
       this.logger.log(`Removed old job for post ${postId} from queue.`);
     }
 
@@ -70,9 +68,10 @@ export class PostQueueService {
   }
 
   async removePostFromQueue(postId: string): Promise<void> {
-    const job = await this.postQueue.getJob(postId);
-    if (job) {
-      await job.remove();
+    const repeatableJobs = await this.postQueue.getRepeatableJobs();
+    const jobToRemove = repeatableJobs.find((job) => job.id === postId);
+    if (jobToRemove) {
+      await this.postQueue.removeRepeatableByKey(jobToRemove.key);
       this.logger.log(`Removed post ${postId} from queue.`);
     } else {
       this.logger.warn(

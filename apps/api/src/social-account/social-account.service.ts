@@ -218,7 +218,6 @@ export class SocialAccountService {
   }
 
   async remove(id: string) {
-    console.log('Removing social account with id:', id);
     return this.socialAccountRepository.delete(id);
   }
 }

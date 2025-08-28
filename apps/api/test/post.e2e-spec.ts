@@ -8,6 +8,8 @@ import { execSync } from 'child_process';
 import { getTestAccessToken } from './helpers/get-test-token';
 import { ConfigService } from '@nestjs/config';
 import { User, SocialAccount, Platform } from 'generated/prisma';
+import { getQueueToken } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 
 describe('Post e2e tests', () => {
   let app: INestApplication;
@@ -16,6 +18,7 @@ describe('Post e2e tests', () => {
   let testUser: User;
   let testSocialAccount: SocialAccount;
   let token: string;
+  let postQueue: Queue;
 
   beforeAll(async () => {
     testContainers = new TestContainers();
@@ -50,6 +53,7 @@ describe('Post e2e tests', () => {
 
     app = moduleFixture.createNestApplication();
     prisma = moduleFixture.get<PrismaService>(PrismaService);
+    postQueue = moduleFixture.get<Queue>(getQueueToken('post'));
 
     app.useGlobalPipes(
       new ValidationPipe({
@@ -68,6 +72,7 @@ describe('Post e2e tests', () => {
   });
 
   beforeEach(async () => {
+    await postQueue.drain();
     await prisma.post.deleteMany({});
     await prisma.socialAccount.deleteMany({});
     await prisma.user.deleteMany({});
@@ -100,7 +105,7 @@ describe('Post e2e tests', () => {
     );
   });
 
-  it('/post POST - should create a post', async () => {
+  it('/post POST - should create a post and add it to the queue', async () => {
     const createPostDto = {
       content: 'This is a test post',
       scheduledFor: new Date(Date.now() + 10000),
@@ -119,6 +124,10 @@ describe('Post e2e tests', () => {
       content: createPostDto.content,
       userId: testUser.id,
     });
+
+    const job = await postQueue.getJob(response.body.id);
+    expect(job).toBeDefined();
+    expect(job.data.postId).toEqual(response.body.id);
   });
 
   it('/post POST - should return 401 for request without a token', async () => {

@@ -25,6 +25,7 @@ services:
       - 8.8.4.4 # Added fallback DNS
     ports:
       - '3001:3001'
+      - '9229:9229' # For node inspector
     volumes:
       # Mount source code for hot reloading
       - ./apps/api:/app/apps/api
@@ -37,7 +38,7 @@ services:
       - .env
     environment:
       - NODE_ENV=development
-    command: pnpm dev --filter=api
+    command: sh -c "pnpm dev --filter=api -- --inspect=0.0.0.0:9229 & tail -f /dev/null"
     stdin_open: true
     tty: true
     depends_on:
@@ -57,6 +58,9 @@ services:
     build:
       context: .
       dockerfile: apps/web/Dockerfile.web
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4 # Added fallback DNS
     ports:
       - '3000:3000'
     volumes:
@@ -74,7 +78,6 @@ services:
       - NODE_ENV=development
       # Add explicit container references
       - API_URL=http://api:3001
-      - REDIS_URL=redis://redis:6379
     command: pnpm dev --filter=web
     stdin_open: true
     tty: true

@@ -13,14 +13,10 @@ export default function AuthCallbackPage() {
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (event, session) => {
         if (event === 'SIGNED_IN') {
-          console.log(
-            'SIGNED_IN event fired. Access token:',
-            session?.access_token
-          );
           if (session?.access_token) {
             handleAfterSignIn(session.access_token)
               .then(() => {
-                router.push('/dashboard');
+                window.location.assign('/dashboard');
               })
               .catch((error) => {
                 console.error('Error after sign in:', error);
