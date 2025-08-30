@@ -1,7 +1,7 @@
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { UserRepository } from 'src/database/repositories/user.repository';
-import { User, Prisma } from 'generated/prisma';
+import { User, Prisma } from '@repo/db/prisma/generated/prisma';
 import { Cache } from 'cache-manager';
 
 @Injectable()

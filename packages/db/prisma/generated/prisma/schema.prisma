@@ -5,8 +5,8 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client-js"
-  output   = "../generated/prisma"
+  provider      = "prisma-client-js"
+  output        = "./generated/prisma"
   binaryTargets = ["native", "linux-musl-openssl-3.0.x", "debian-openssl-3.0.x"]
 }
 
@@ -16,54 +16,54 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
+  id         String   @id @default(cuid())
   supabaseId String?  @unique
-  email     String   @unique
-  name      String?
-  avatar    String?
-  timezone  String   @default("UTC") // IANA timezone identifier (e.g., "America/New_York")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
+  email      String   @unique
+  name       String?
+  avatar     String?
+  timezone   String   @default("UTC") // IANA timezone identifier (e.g., "America/New_York")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
   // Relations
   socialAccounts SocialAccount[]
-  posts         Post[]
+  posts          Post[]
 }
 
 model SocialAccount {
-  id           String   @id @default(cuid())
+  id           String    @id @default(cuid())
   platform     Platform
-  platformId   String   // LinkedIn ID or Twitter ID
+  platformId   String // LinkedIn ID or Twitter ID
   username     String
   displayName  String?
   avatar       String?
   accessToken  String
   refreshToken String?
   expiresAt    DateTime?
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+
   // Relations
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   posts  Post[]
-  
+
   @@unique([userId, platform])
 }
 
 model Post {
-  id           String     @id @default(cuid())
-  content      String
-  media        String[]   @default([]) // Array of media URLs (images, videos)
-  scheduledFor DateTime
-  publishedAt  DateTime?
-  status       PostStatus @default(SCHEDULED)
-  platform     Platform
-  platformPostId String?  // ID from LinkedIn/Twitter after posting
-  errorMessage String?
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-  
+  id             String     @id @default(cuid())
+  content        String
+  media          String[]   @default([]) // Array of media URLs (images, videos)
+  scheduledFor   DateTime
+  publishedAt    DateTime?
+  status         PostStatus @default(SCHEDULED)
+  platform       Platform
+  platformPostId String? // ID from LinkedIn/Twitter after posting
+  errorMessage   String?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
   // Relations
   userId          String
   socialAccountId String

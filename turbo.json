@@ -37,6 +37,12 @@
     "test:coverage": {
       "outputs": ["coverage/**"],
       "dependsOn": ["^build"]
+    },
+    "db:push": {
+      "cache": false
+    },
+    "db:generate": {
+      "cache": false
     }
   }
 }

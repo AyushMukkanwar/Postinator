@@ -16,7 +16,7 @@ import { ResourceOwnerGuard } from 'src/auth/guards/resource-owner.guard';
 import { ResourceParamName } from 'src/auth/decorators/resource-param.decorator';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { SocialAccountEntity } from './entities/social-account.entity';
-import { User as UserModel } from 'generated/prisma';
+import { User as UserModel } from '@repo/db/prisma/generated/prisma';
 import { User } from 'src/auth/decorators/user.decorator';
 
 @ApiTags('social-account')

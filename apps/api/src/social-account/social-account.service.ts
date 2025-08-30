@@ -5,7 +5,7 @@ import {
   Inject,
   forwardRef,
 } from '@nestjs/common';
-import { Prisma } from 'generated/prisma';
+import { Prisma } from '@repo/db/prisma/generated/prisma';
 import { CreateSocialAccountDto } from './dto/create-social-account.dto';
 import { UpdateSocialAccountDto } from './dto/update-social-account.dto';
 import { SocialAccountRepository } from 'src/database/repositories/social-account.repository';

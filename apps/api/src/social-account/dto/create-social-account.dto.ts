@@ -6,7 +6,7 @@ import {
   IsOptional,
   IsString,
 } from 'class-validator';
-import { Platform } from 'generated/prisma';
+import { Platform } from '@repo/db/prisma/generated/prisma';
 
 export class CreateSocialAccountDto {
   @ApiProperty({
