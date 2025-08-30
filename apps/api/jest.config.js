@@ -18,14 +18,12 @@ module.exports = {
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
   transform: {
-    '^.+\.ts
-: 'ts-jest',
+    '^.+\.ts$': 'ts-jest',
   },
   moduleNameMapper: {
-    '^@/(.*)
-: '<rootDir>/src/$1',
-    '^@repo/db/prisma/generated/prisma
-: '<rootDir>/../../packages/db/prisma/generated/prisma',
+    '^@/(.*)$': '<rootDir>/src/$1',
+    '^@repo/db/prisma/generated/prisma$':
+      '<rootDir>/../../packages/db/prisma/generated/prisma',
   },
   clearMocks: true,
   resetMocks: true,
