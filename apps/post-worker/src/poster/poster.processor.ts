@@ -26,18 +26,18 @@ export class PosterProcessor extends WorkerHost {
     }
 
     if (post.status !== 'SCHEDULED') {
-        this.logger.warn(
-          `Post ${postId} is no longer in a scheduled state (current state: ${post.status}). Skipping.`,
-        );
-        return;
-      }
+      this.logger.warn(
+        `Post ${postId} is no longer in a scheduled state (current state: ${post.status}). Skipping.`,
+      );
+      return;
+    }
 
     try {
       // Simulate posting to the social media platform
       this.logger.log(
-        `Posting to ${post.socialAccount.platform} for user ${post.userId}: "${post.content}"`
+        `Posting to ${post.socialAccount.platform} for user ${post.userId}: "${post.content}"`,
       );
-      
+
       // Simulate a successful post with a fake platform ID
       const platformPostId = `fake-post-id-${Date.now()}`;
 
