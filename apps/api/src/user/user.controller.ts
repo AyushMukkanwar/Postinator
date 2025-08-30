@@ -21,7 +21,7 @@ import {
   ApiQuery,
   ApiParam,
 } from '@nestjs/swagger';
-import { Prisma } from '../../generated/prisma';
+import { Prisma, User as UserModel } from '@repo/db/prisma/generated/prisma';
 import { UserService } from './user.service';
 import {
   CreateUserDto,
@@ -29,7 +29,6 @@ import {
   GetUsersQueryDto,
   UserEntity,
 } from './dto';
-import { User as UserModel } from 'generated/prisma';
 import { JwtAuthGuard } from 'src/auth/guards/jwt.auth.guard';
 import { Throttle } from '@nestjs/throttler';
 import { ResourceOwnerGuard } from 'src/auth/guards/resource-owner.guard';

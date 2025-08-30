@@ -1,13 +1,17 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
-import * as request from 'supertest';
+import request from 'supertest';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { AppModule } from 'src/app.module';
 import { TestContainers } from './testcontainers-setup';
-import { execSync } from 'child_process';
 import { getTestAccessToken } from './helpers/get-test-token';
+import { execSync } from 'child_process';
 import { ConfigService } from '@nestjs/config';
-import { User, SocialAccount, Platform } from 'generated/prisma';
+import {
+  User,
+  SocialAccount,
+  Platform,
+} from '@repo/db/prisma/generated/prisma';
 import { getQueueToken } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 
@@ -21,54 +25,69 @@ describe('Post e2e tests', () => {
   let postQueue: Queue;
 
   beforeAll(async () => {
-    testContainers = new TestContainers();
-    const { dbUri } = await testContainers.start();
+    try {
+      testContainers = new TestContainers();
+      const { dbUri, redisUrl } = await testContainers.start();
 
-    execSync('npx prisma db push', {
-      env: { ...process.env, DATABASE_URL: dbUri },
-      stdio: 'inherit',
-    });
+      process.env.DATABASE_URL = dbUri;
+      process.env.REDIS_URL = redisUrl;
 
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    })
-      .overrideProvider(ConfigService)
-      .useValue({
-        get: (key: string) => {
-          return process.env[key];
-        },
+      execSync('npx prisma db push', {
+        cwd: '../../packages/db',
+        env: { ...process.env, DATABASE_URL: dbUri },
+        stdio: 'inherit',
+      });
+
+      const moduleFixture: TestingModule = await Test.createTestingModule({
+        imports: [AppModule],
       })
-      .overrideProvider('SUPABASE_CLIENT')
-      .useValue({
-        auth: {
-          getUser: jest.fn().mockResolvedValue({
-            data: {
-              user: { id: 'test-supabase-id', email: 'test@example.com' },
-            },
-            error: null,
-          }),
-        },
-      })
-      .compile();
+        .overrideProvider(ConfigService)
+        .useValue({
+          get: (key: string) => {
+            return process.env[key];
+          },
+        })
+        .overrideProvider('SUPABASE_CLIENT')
+        .useValue({
+          auth: {
+            getUser: jest.fn().mockResolvedValue({
+              data: {
+                user: { id: 'test-supabase-id', email: 'test@example.com' },
+              },
+              error: null,
+            }),
+          },
+        })
+        .compile();
 
-    app = moduleFixture.createNestApplication();
-    prisma = moduleFixture.get<PrismaService>(PrismaService);
-    postQueue = moduleFixture.get<Queue>(getQueueToken('post'));
+      app = moduleFixture.createNestApplication();
+      prisma = moduleFixture.get<PrismaService>(PrismaService);
+      postQueue = moduleFixture.get<Queue>(getQueueToken('post'));
 
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        transform: true,
-      })
-    );
+      app.useGlobalPipes(
+        new ValidationPipe({
+          whitelist: true,
+          transform: true,
+        })
+      );
 
-    await app.init();
+      await app.init();
+    } catch (error) {
+      console.error('Test setup failed:', error);
+      throw error;
+    }
   });
 
   afterAll(async () => {
-    await app.close();
-    await prisma.$disconnect();
-    await testContainers.stop();
+    if (app) {
+      await app.close();
+    }
+    if (prisma) {
+      await prisma.$disconnect();
+    }
+    if (testContainers) {
+      await testContainers.stop();
+    }
   });
 
   beforeEach(async () => {

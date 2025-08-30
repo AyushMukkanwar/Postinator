@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { SocialAccount, Prisma } from 'generated/prisma';
+import { SocialAccount, Prisma } from '@repo/db/prisma/generated/prisma';
 import { BaseRepository } from './base.repository';
 
 export interface ISocialAccountRepository

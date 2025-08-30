@@ -8,7 +8,7 @@ import {
 import { Reflector } from '@nestjs/core';
 import { Request } from 'express';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { User } from 'generated/prisma';
+import { User } from '@repo/db/prisma/generated/prisma';
 
 @Injectable()
 export class ResourceOwnerGuard implements CanActivate {

@@ -2,7 +2,7 @@ import { Injectable, UnauthorizedException, Inject } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { UserService } from '../user/user.service'; // Adjust path as needed
-import { Prisma } from 'generated/prisma';
+import { Prisma } from '@repo/db/prisma/generated/prisma';
 import { ConfigService } from '@nestjs/config';
 import * as jwt from 'jsonwebtoken';
 

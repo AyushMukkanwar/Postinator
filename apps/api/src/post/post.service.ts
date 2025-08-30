@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { PostRepository } from 'src/database/repositories/post.repository';
 import { SocialAccountRepository } from 'src/database/repositories/social-account.repository';
-import { Post, PostStatus, Platform } from 'generated/prisma';
+import { Post, PostStatus, Platform } from '@repo/db/prisma/generated/prisma';
 import { PostQueueService } from '../queue/post-queue.service';
 import { Cache } from 'cache-manager';
 

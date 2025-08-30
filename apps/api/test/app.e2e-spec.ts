@@ -1,27 +1,23 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { createClient } from '@supabase/supabase-js';
 import * as request from 'supertest';
-import { App } from 'supertest/types';
-import { AppModule } from './../src/app.module';
+import { AppModule } from '../src/app.module';
+import { TestContainers } from './testcontainers-setup';
+import { PrismaService } from '../src/prisma/prisma.service';
+import { ConfigService } from '@nestjs/config';
 
 describe('AppController (e2e)', () => {
-  let app: INestApplication<App>;
+  let app: INestApplication;
+  let testContainers: TestContainers;
+  let prismaService: PrismaService;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
+    testContainers = new TestContainers();
+    await testContainers.start();
+
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     })
-      .overrideProvider(ConfigService)
-      .useValue({
-        get: (key: string) => {
-          if (key === 'ENCRYPTION_KEY') {
-            return process.env.ENCRYPTION_KEY;
-          }
-          return process.env[key];
-        },
-      })
       .overrideProvider('SUPABASE_CLIENT')
       .useValue({
         auth: {
@@ -36,11 +32,19 @@ describe('AppController (e2e)', () => {
       .compile();
 
     app = moduleFixture.createNestApplication();
+    prismaService = moduleFixture.get<PrismaService>(PrismaService);
     await app.init();
   });
 
+  afterAll(async () => {
+    await app.close();
+    await testContainers.stop();
+    await prismaService.$disconnect();
+  });
+
   it('/ (GET)', () => {
-    return request(app.getHttpServer())
+    return request
+      .default(app.getHttpServer())
       .get('/')
       .expect(200)
       .expect('Hello World!');
