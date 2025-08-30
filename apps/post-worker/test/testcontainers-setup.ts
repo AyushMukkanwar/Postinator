@@ -3,6 +3,9 @@ import {
   StartedPostgreSqlContainer,
 } from '@testcontainers/postgresql';
 import { RedisContainer, StartedRedisContainer } from '@testcontainers/redis';
+import { execSync } from 'child_process';
+import { existsSync } from 'fs';
+import path from 'path';
 
 export class TestContainers {
   private pgContainer?: StartedPostgreSqlContainer;
@@ -26,6 +29,29 @@ export class TestContainers {
 
     process.env.DATABASE_URL = dbUri;
     process.env.REDIS_URL = redisUrl;
+
+    const prismaPath =
+      '/home/ayush_mukkanwar/Dev/Projects/uploader/node_modules/.bin/prisma';
+    console.log('Prisma path exists:', existsSync(prismaPath));
+    console.log('Current working directory:', process.cwd());
+    console.log('Environment DATABASE_URL:', process.env.DATABASE_URL);
+
+    try {
+      execSync(
+        'pnpm --filter @repo/db exec prisma db push --accept-data-loss',
+        {
+          stdio: 'inherit',
+          env: {
+            ...process.env,
+            DATABASE_URL: dbUri,
+          },
+          cwd: path.resolve(__dirname, '../../../..'),
+        },
+      );
+    } catch (error) {
+      console.error('Failed to push database schema:', error);
+      throw error;
+    }
 
     return { dbUri, redisUrl };
   }
