@@ -20,7 +20,6 @@
     "noFallthroughCasesInSwitch": false,
     "strictPropertyInitialization": false,
     "paths": {
-      "@repo/test-utils": ["../../packages/test-utils/src"],
       "@prisma/client": ["../../packages/db/prisma/generated/prisma"]
     }
   }

@@ -18,9 +18,6 @@
     "strictBindCallApply": false,
     "noFallthroughCasesInSwitch": false,
     "strictPropertyInitialization": false,
-    "paths": {
-      "@repo/test-utils": ["../../packages/test-utils/src"],
-      "@repo/db": ["../../packages/db/src"]
-    }
+    "paths": {}
   }
 }

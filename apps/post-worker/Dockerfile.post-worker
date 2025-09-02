@@ -1,0 +1,33 @@
+# Dockerfile.post-worker (for NestJS post-worker)
+FROM node:20-slim
+
+# Set the working directory
+WORKDIR /app
+
+# Install pnpm
+RUN npm install -g pnpm
+
+# Install build tools for native addons and openssl for Prisma
+RUN apt-get update && apt-get install -y python3 make g++ openssl curl
+
+# Copy root package management files
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
+
+# Copy app and package manifests
+COPY apps/api/package.json ./apps/api/
+COPY apps/post-worker/package.json ./apps/post-worker/
+COPY apps/web/package.json ./apps/web/
+COPY packages/db/package.json ./packages/db/
+COPY packages/ui/package.json ./packages/ui/
+COPY packages/eslint-config/package.json ./packages/eslint-config/
+COPY packages/typescript-config/package.json ./packages/typescript-config/
+
+# Install all dependencies
+RUN pnpm install --filter=post-worker...
+
+# Copy the rest of the source code
+COPY . .
+
+# The command in docker-compose.yml will override this,
+# but this is a good default for running the container directly.
+CMD ["pnpm", "dev", "--filter=post-worker"]

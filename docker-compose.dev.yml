@@ -54,6 +54,35 @@ services:
     networks:
       - app-network
 
+  post-worker:
+    build:
+      context: .
+      dockerfile: apps/post-worker/Dockerfile.post-worker
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    volumes:
+      # Mount source code for hot reloading (same pattern as API)
+      - ./apps/post-worker:/app/apps/post-worker
+      - ./packages:/app/packages
+      - ./turbo.json:/app/turbo.json
+      - ./package.json:/app/package.json
+      # Use a named volume to preserve node_modules
+      - post_worker_node_modules:/app/node_modules
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=development
+    command: pnpm dev --filter=post-worker
+    stdin_open: true
+    tty: true
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - app-network
+
   web:
     build:
       context: .
@@ -98,6 +127,7 @@ volumes:
   node_modules:
   web_node_modules:
   api_node_modules:
+  post_worker_node_modules:
   packages_node_modules:
 
 networks:
