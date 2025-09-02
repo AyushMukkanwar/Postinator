@@ -21,6 +21,7 @@
     "docker:restart": "docker compose -f docker-compose.dev.yml restart",
     "docker:build": "docker compose -f docker-compose.dev.yml build",
     "test": "turbo run test",
+    "test:e2e": "turbo run test:e2e",
     "test:watch": "turbo run test:watch",
     "test:coverage": "turbo run test:coverage",
     "db:generate": "turbo run db:generate",
