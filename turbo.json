@@ -1,48 +1,31 @@
 {
-  "$schema": "https://turborepo.com/schema.json",
-  "ui": "tui",
-  "tasks": {
+  "$schema": "https://turbo.build/schema.json",
+  "globalDependencies": ["**/.env.*local"],
+  "pipeline": {
     "build": {
       "dependsOn": ["^build"],
-      "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "outputs": [".next/**", "!.next/cache/**", "dist/**", "build/**"]
-    },
-    "lint": {
-      "dependsOn": ["^lint"],
-      "inputs": ["$TURBO_DEFAULT$", ".eslintrc*", ".eslintignore"]
-    },
-    "typecheck": {
-      "dependsOn": ["^typecheck"],
-      "inputs": ["$TURBO_DEFAULT$", "tsconfig*.json"]
-    },
-    "check-types": {
-      "dependsOn": ["^check-types"],
-      "inputs": ["$TURBO_DEFAULT$", "tsconfig*.json"]
+      "outputs": ["dist/**", ".next/**", "!.next/cache/**"]
     },
     "dev": {
       "cache": false,
       "persistent": true
     },
-    "clean": {
-      "cache": false
+    "start": {
+      "dependsOn": ["build"]
+    }
+  },
+  "tasks": {
+    "api#dev": {
+      "command": "nest start api --watch",
+      "dependsOn": ["@repo/db#generate"]
     },
-    "test": {
-      "outputs": ["coverage/**"],
-      "dependsOn": ["^build"]
+    "post-worker#dev": {
+      "command": "nest start post-worker --watch",
+      "dependsOn": ["@repo/db#generate"]
     },
-    "test:watch": {
-      "cache": false,
-      "persistent": true
-    },
-    "test:coverage": {
-      "outputs": ["coverage/**"],
-      "dependsOn": ["^build"]
-    },
-    "db:push": {
-      "cache": false
-    },
-    "db:generate": {
-      "cache": false
+    "web#dev": {
+      "command": "next dev",
+      "dependsOn": ["@repo/db#generate"]
     }
   }
 }

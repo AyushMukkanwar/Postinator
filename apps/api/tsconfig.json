@@ -20,7 +20,7 @@
     "noFallthroughCasesInSwitch": false,
     "strictPropertyInitialization": false,
     "paths": {
-      "@prisma/client": ["../../packages/db/prisma/generated/prisma"]
+      "@repo/db": ["../../packages/db/src"]
     }
   }
 }

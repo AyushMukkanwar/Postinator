@@ -29,7 +29,7 @@ export function PlatformAccess() {
     } else {
       // Initiate OAuth flow
       if (platform === 'TWITTER') {
-        window.location.href = '/twitter';
+        window.location.href = '/api/auth/twitter';
       } else {
         // Handle other platform toggle logic here
         console.log(`Toggle ${platform}`);

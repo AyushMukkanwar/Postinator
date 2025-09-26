@@ -10,16 +10,17 @@ import { HttpExceptionFilter } from './filters/http-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  app.enableCors({
+    origin: [
+      'http://localhost:3000',
+      'https://app.localhost:3000',
+      'http://localhost:3001',
+      'https://app.localhost:3001',
+    ],
+    credentials: true,
+  });
   const configService = app.get(ConfigService);
   const port = configService.get<number>('PORT') || 3001; // Default to 3001 if not in .env
-
-  // Enable CORS
-  app.enableCors({
-    origin: ['http://localhost:3000'], // Allow requests from your frontend
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true, // Allow cookies/credentials if needed
-  });
 
   app.useGlobalPipes(
     new ValidationPipe({

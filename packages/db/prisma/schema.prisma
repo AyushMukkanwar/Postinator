@@ -6,7 +6,7 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "./generated/prisma"
+  output   = "../src/generated/client"
   binaryTargets = ["native", "linux-musl-openssl-3.0.x", "debian-openssl-3.0.x", "debian-openssl-1.1.x"]
 }
 
@@ -31,23 +31,28 @@ model User {
 }
 
 model SocialAccount {
-  id           String   @id @default(cuid())
-  platform     Platform
-  platformId   String   // LinkedIn ID or Twitter ID
-  username     String
-  displayName  String?
-  avatar       String?
-  accessToken  String
-  refreshToken String?
-  expiresAt    DateTime?
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
+  id            String    @id @default(cuid())
+  platform      Platform
+  platformId    String?
+  username      String?
+  displayName   String?
+  avatar        String?
   
+  // Refactored token fields
+  tokenType     TokenType // This new field specifies the auth protocol
+  accessToken   String    // Stores OAUTH2 access_token or OAUTH1 oauth_token
+  accessSecret  String?   // Stores OAUTH1 oauth_token_secret
+  refreshToken  String?   // Stores OAUTH2 refresh_token
+  expiresAt     DateTime? // Stores OAUTH2 token expiry time
+
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+
   // Relations
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   posts  Post[]
-  
+
   @@unique([userId, platform])
 }
 
@@ -74,6 +79,11 @@ model Post {
 enum Platform {
   LINKEDIN
   TWITTER
+}
+
+enum TokenType {
+  OAUTH1
+  OAUTH2
 }
 
 enum PostStatus {

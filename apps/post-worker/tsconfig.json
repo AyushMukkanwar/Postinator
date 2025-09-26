@@ -18,6 +18,8 @@
     "strictBindCallApply": false,
     "noFallthroughCasesInSwitch": false,
     "strictPropertyInitialization": false,
-    "paths": {}
+    "paths": {
+      "@repo/db": ["../../packages/db/src"]
+    }
   }
 }

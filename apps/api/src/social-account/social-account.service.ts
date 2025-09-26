@@ -1,16 +1,20 @@
 import {
   Injectable,
-  ConflictException,
   NotFoundException,
   Inject,
   forwardRef,
 } from '@nestjs/common';
-import { Prisma } from '@repo/db/prisma/generated/prisma';
+import { Prisma, SocialAccount } from '@repo/db';
 import { CreateSocialAccountDto } from './dto/create-social-account.dto';
 import { UpdateSocialAccountDto } from './dto/update-social-account.dto';
 import { SocialAccountRepository } from 'src/database/repositories/social-account.repository';
 import { EncryptionService } from 'src/encryption/encryption.service';
 import { UserService } from 'src/user/user.service';
+
+export type StrippedSocialAccount = Omit<
+  SocialAccount,
+  'accessSecret' | 'refreshToken'
+>;
 
 @Injectable()
 export class SocialAccountService {
@@ -21,20 +25,55 @@ export class SocialAccountService {
     private readonly userService: UserService
   ) {}
 
-  async upsert(createSocialAccountDto: CreateSocialAccountDto, userId: string) {
-    const { platform, accessToken, refreshToken, expiresIn, ...rest } =
-      createSocialAccountDto;
+  private decryptAccountTokens(account: SocialAccount): SocialAccount {
+    const decryptedAccount = { ...account };
 
-    const encryptedAccessToken = this.encryptionService.encrypt(accessToken);
-    const encryptedRefreshToken = refreshToken
-      ? this.encryptionService.encrypt(refreshToken)
-      : null;
+    decryptedAccount.accessToken = this.encryptionService.decrypt(
+      account.accessToken
+    );
+    if (account.accessSecret) {
+      decryptedAccount.accessSecret = this.encryptionService.decrypt(
+        account.accessSecret
+      );
+    }
+    if (account.refreshToken) {
+      decryptedAccount.refreshToken = this.encryptionService.decrypt(
+        account.refreshToken
+      );
+    }
+    return decryptedAccount;
+  }
+
+  private stripSensitiveData(account: SocialAccount): StrippedSocialAccount {
+    const { accessSecret, refreshToken, ...result } = account;
+    return result;
+  }
+
+  async upsert(
+    createSocialAccountDto: CreateSocialAccountDto,
+    userId: string
+  ): Promise<StrippedSocialAccount> {
+    const {
+      platform,
+      tokenType,
+      accessToken,
+      accessSecret,
+      refreshToken,
+      expiresIn,
+      ...rest
+    } = createSocialAccountDto;
 
     const data: Prisma.SocialAccountUncheckedCreateInput = {
       ...rest,
       platform,
-      accessToken: encryptedAccessToken,
-      refreshToken: encryptedRefreshToken,
+      tokenType,
+      accessToken: this.encryptionService.encrypt(accessToken),
+      accessSecret: accessSecret
+        ? this.encryptionService.encrypt(accessSecret)
+        : null,
+      refreshToken: refreshToken
+        ? this.encryptionService.encrypt(refreshToken)
+        : null,
       expiresAt: expiresIn ? new Date(Date.now() + expiresIn * 1000) : null,
       userId,
     };
@@ -46,84 +85,10 @@ export class SocialAccountService {
     });
 
     if (!socialAccount) {
-      throw new NotFoundException('Social account not found after upsert');
+      throw new NotFoundException('Could not create or update social account');
     }
 
-    // Decrypt tokens before returning to the client
-    socialAccount.accessToken = this.encryptionService.decrypt(
-      socialAccount.accessToken
-    );
-    if (socialAccount.refreshToken) {
-      socialAccount.refreshToken = this.encryptionService.decrypt(
-        socialAccount.refreshToken
-      );
-    }
-
-    const {
-      accessToken: removedAccessToken,
-      refreshToken: removedRefreshToken,
-      ...result
-    } = socialAccount;
-    return result;
-  }
-
-  async create(createSocialAccountDto: CreateSocialAccountDto, userId: string) {
-    const { platform, accessToken, refreshToken, ...rest } =
-      createSocialAccountDto;
-
-    // Check if a social account for this user and platform already exists
-    const existingAccount = await this.socialAccountRepository.findUnique({
-      userId_platform: {
-        userId,
-        platform,
-      },
-    });
-
-    if (existingAccount) {
-      throw new ConflictException(
-        `User already has a social account for platform ${platform}`
-      );
-    }
-
-    const encryptedAccessToken = this.encryptionService.encrypt(accessToken);
-    const encryptedRefreshToken = refreshToken
-      ? this.encryptionService.encrypt(refreshToken)
-      : null;
-
-    const data: Prisma.SocialAccountCreateInput = {
-      ...rest,
-      platform,
-      accessToken: encryptedAccessToken,
-      refreshToken: encryptedRefreshToken,
-      user: {
-        connect: {
-          id: userId,
-        },
-      },
-    };
-    try {
-      const newAccount = await this.socialAccountRepository.create(data);
-
-      // Decrypt tokens before returning to the client
-      newAccount.accessToken = this.encryptionService.decrypt(
-        newAccount.accessToken
-      );
-      if (newAccount.refreshToken) {
-        newAccount.refreshToken = this.encryptionService.decrypt(
-          newAccount.refreshToken
-        );
-      }
-
-      const {
-        accessToken: removedAccessToken,
-        refreshToken: removedRefreshToken,
-        ...result
-      } = newAccount;
-      return result;
-    } catch (error) {
-      console.error(error);
-      throw error;
-    }
+    return this.stripSensitiveData(socialAccount);
   }
 
   async findAll(params?: {
@@ -131,53 +96,51 @@ export class SocialAccountService {
     take?: number;
     where?: Prisma.SocialAccountWhereInput;
     orderBy?: Prisma.SocialAccountOrderByWithRelationInput;
-  }) {
+  }): Promise<StrippedSocialAccount[]> {
     const accounts = await this.socialAccountRepository.findMany(params);
-
-    // Decrypt tokens for all accounts
-    return accounts.map((account) => {
-      account.accessToken = this.encryptionService.decrypt(account.accessToken);
-      if (account.refreshToken) {
-        account.refreshToken = this.encryptionService.decrypt(
-          account.refreshToken
-        );
-      }
-
-      const {
-        accessToken: removedAccessToken,
-        refreshToken: removedRefreshToken,
-        ...result
-      } = account;
-      return result;
-    });
+    return accounts.map((account) => this.stripSensitiveData(account));
   }
 
-  async findOne(id: string) {
+  async findByOAuthToken(oauthToken: string): Promise<SocialAccount> {
+    const accounts = await this.socialAccountRepository.findMany({
+      where: { accessToken: this.encryptionService.encrypt(oauthToken) },
+    });
+
+    if (!accounts || accounts.length === 0) {
+      throw new NotFoundException(
+        'Social account with the provided OAuth token not found'
+      );
+    }
+
+    const account = accounts[0];
+    if (!account) {
+      throw new NotFoundException('Social account not found');
+    }
+
+    return this.decryptAccountTokens(account);
+  }
+
+  async findOne(id: string): Promise<StrippedSocialAccount> {
     const socialAccount = await this.socialAccountRepository.findById(id);
     if (!socialAccount) {
       throw new NotFoundException(`Social account with ID ${id} not found`);
     }
-
-    // Decrypt tokens
-    socialAccount.accessToken = this.encryptionService.decrypt(
-      socialAccount.accessToken
-    );
-    if (socialAccount.refreshToken) {
-      socialAccount.refreshToken = this.encryptionService.decrypt(
-        socialAccount.refreshToken
-      );
-    }
-
-    const {
-      accessToken: removedAccessToken,
-      refreshToken: removedRefreshToken,
-      ...result
-    } = socialAccount;
-    return result;
+    return this.stripSensitiveData(socialAccount);
   }
 
-  async update(id: string, updateSocialAccountDto: UpdateSocialAccountDto) {
-    const { accessToken, refreshToken, expiresIn, ...rest } =
+  async findOneDecrypted(id: string): Promise<SocialAccount> {
+    const socialAccount = await this.socialAccountRepository.findById(id);
+    if (!socialAccount) {
+      throw new NotFoundException(`Social account with ID ${id} not found`);
+    }
+    return this.decryptAccountTokens(socialAccount);
+  }
+
+  async update(
+    id: string,
+    updateSocialAccountDto: UpdateSocialAccountDto
+  ): Promise<StrippedSocialAccount> {
+    const { accessToken, accessSecret, refreshToken, expiresIn, ...rest } =
       updateSocialAccountDto;
 
     const dataToUpdate: Prisma.SocialAccountUpdateInput = { ...rest };
@@ -185,13 +148,14 @@ export class SocialAccountService {
     if (accessToken) {
       dataToUpdate.accessToken = this.encryptionService.encrypt(accessToken);
     }
-
-    if (expiresIn) {
-      dataToUpdate.expiresAt = new Date(Date.now() + expiresIn * 1000);
+    if (accessSecret) {
+      dataToUpdate.accessSecret = this.encryptionService.encrypt(accessSecret);
     }
-
     if (refreshToken) {
       dataToUpdate.refreshToken = this.encryptionService.encrypt(refreshToken);
+    }
+    if (expiresIn) {
+      dataToUpdate.expiresAt = new Date(Date.now() + expiresIn * 1000);
     }
 
     const updatedAccount = await this.socialAccountRepository.update(
@@ -199,25 +163,16 @@ export class SocialAccountService {
       dataToUpdate
     );
 
-    // Decrypt tokens before returning
-    updatedAccount.accessToken = this.encryptionService.decrypt(
-      updatedAccount.accessToken
-    );
-    if (updatedAccount.refreshToken) {
-      updatedAccount.refreshToken = this.encryptionService.decrypt(
-        updatedAccount.refreshToken
+    if (!updatedAccount) {
+      throw new NotFoundException(
+        `Could not update social account with ID ${id}`
       );
     }
 
-    const {
-      accessToken: removedAccessToken,
-      refreshToken: removedRefreshToken,
-      ...result
-    } = updatedAccount;
-    return result;
+    return this.stripSensitiveData(updatedAccount);
   }
 
-  async remove(id: string) {
+  async remove(id: string): Promise<SocialAccount> {
     return this.socialAccountRepository.delete(id);
   }
 }

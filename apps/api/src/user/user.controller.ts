@@ -21,7 +21,7 @@ import {
   ApiQuery,
   ApiParam,
 } from '@nestjs/swagger';
-import { Prisma, User as UserModel } from '@repo/db/prisma/generated/prisma';
+import { Prisma, User as UserModel } from '@repo/db';
 import { UserService } from './user.service';
 import {
   CreateUserDto,

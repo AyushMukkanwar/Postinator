@@ -1,9 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-
-export enum Platform {
-  LINKEDIN = 'LINKEDIN',
-  TWITTER = 'TWITTER',
-}
+import { Platform, TokenType } from '@repo/db';
 
 export class SocialAccountEntity {
   @ApiProperty({
@@ -15,7 +11,7 @@ export class SocialAccountEntity {
   @ApiProperty({
     description: 'Social media platform',
     enum: Platform,
-    example: Platform.LINKEDIN,
+    example: 'LINKEDIN',
   })
   platform: Platform;
 
@@ -40,20 +36,29 @@ export class SocialAccountEntity {
   avatar?: string | null;
 
   @ApiProperty({
-    description: 'Access token for platform API',
+    description: 'Authentication protocol used',
+    enum: TokenType,
+    example: 'OAUTH2',
+  })
+  tokenType: TokenType;
+
+  @ApiProperty({
+    description: 'Access token for the platform API',
     example: 'access_token_123',
   })
   accessToken: string;
 
+  // accessSecret is intentionally omitted for security
+
   @ApiProperty({
-    description: 'Refresh token for platform API',
+    description: 'Refresh token for the platform API (for OAuth2)',
     required: false,
     example: 'refresh_token_456',
   })
   refreshToken?: string | null;
 
   @ApiProperty({
-    description: 'Token expiration date',
+    description: 'Token expiration date (for OAuth2)',
     required: false,
     example: '2024-06-01T00:00:00.000Z',
   })

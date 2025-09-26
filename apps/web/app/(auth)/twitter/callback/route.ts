@@ -1,147 +1,48 @@
 // (auth)/twitter/callback/route.ts
-import { upsertSocialAccount } from '@/actions/social-account';
-import { verifyCSRFToken } from '@/lib/csrf';
-
-import { Platform } from '@/types/socialAccount';
-
-import { TwitterOAuthTokenResponse } from '@/types/twitter';
+import { authenticatedPost } from '@/lib/auth/auth-fetch';
 import { parse, serialize } from 'cookie';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const code = searchParams.get('code');
-    const state = searchParams.get('state');
-    const error = searchParams.get('error');
+    const oauth_token = searchParams.get('oauth_token');
+    const oauth_verifier = searchParams.get('oauth_verifier');
 
-    // Handle OAuth errors from X
-    if (error) {
-      console.error('X OAuth error:', error);
-      return NextResponse.redirect(
-        new URL('/login?error=oauth_error', req.url)
-      );
+    if (!oauth_token || !oauth_verifier) {
+      throw new Error('Missing oauth_token or oauth_verifier');
     }
 
-    if (!code || !state) {
-      console.error('Missing code or state in query');
-      return NextResponse.redirect(
-        new URL('/login?error=missing_params', req.url)
-      );
-    }
-
-    // Get CSRF token and code verifier from cookies
     const cookies = parse(req.headers.get('cookie') || '');
-    const storedState = cookies['twitter_oauth_state'];
-    const codeVerifier = cookies['twitter_oauth_code_verifier'];
+    const oauth_token_secret = cookies['twitter_oauth_token_secret'];
 
-    if (!verifyCSRFToken(state, storedState)) {
-      console.error('CSRF token verification failed');
-      return NextResponse.redirect(new URL('/login?error=csrf_error', req.url));
+    if (!oauth_token_secret) {
+      throw new Error('Missing oauth_token_secret from cookie');
     }
 
-    if (!codeVerifier) {
-      console.error('Missing code_verifier in cookies');
-      return NextResponse.redirect(new URL('/login?error=pkce_error', req.url));
+    const response = await authenticatedPost(
+      '/social-account/twitter/access-token',
+      {
+        oauth_token,
+        oauth_verifier,
+        oauth_token_secret,
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error('Failed to get access token');
     }
 
-    // Check for environment variables
-    const clientId = process.env.TWITTER_CLIENT_ID;
-    const clientSecret = process.env.TWITTER_CLIENT_SECRET;
-    const redirectUri = process.env.TWITTER_REDIRECT_URI;
-
-    if (!clientId || !redirectUri) {
-      console.error('Missing X OAuth environment variables');
-      return NextResponse.redirect(
-        new URL('/login?error=server_config', req.url)
-      );
-    }
-
-    // Prepare request body for token exchange
-    const tokenRequestBody = new URLSearchParams({
-      grant_type: 'authorization_code',
-      code,
-      redirect_uri: redirectUri,
-      code_verifier: codeVerifier,
-      client_id: clientId, // Always include client_id in body
-    });
-
-    // Prepare headers - use Basic auth if client_secret is available (confidential client)
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/x-www-form-urlencoded',
-    };
-
-    // For confidential clients, use Basic Authentication with client credentials
-    if (clientSecret) {
-      const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString(
-        'base64'
-      );
-      headers['Authorization'] = `Basic ${credentials}`;
-    }
-
-    // Exchange authorization code for access token using correct X API endpoint
-    const tokenResponse = await fetch('https://api.x.com/2/oauth2/token', {
-      method: 'POST',
-      headers,
-      body: tokenRequestBody.toString(),
-    });
-
-    if (!tokenResponse.ok) {
-      const errorData = await tokenResponse.text();
-      console.error('Token exchange failed:', tokenResponse.status, errorData);
-      return NextResponse.redirect(
-        new URL('/login?error=token_error', req.url)
-      );
-    }
-
-    const tokens: TwitterOAuthTokenResponse = await tokenResponse.json();
-
-    // Fetch user's profile from X API
-    const userProfileResponse = await fetch('https://api.x.com/2/users/me', {
-      headers: {
-        Authorization: `Bearer ${tokens.access_token}`,
-      },
-    });
-
-    if (!userProfileResponse.ok) {
-      const errorData = await userProfileResponse.text();
-      console.error(
-        'Failed to fetch user profile:',
-        userProfileResponse.status,
-        errorData
-      );
-      return NextResponse.redirect(
-        new URL('/login?error=profile_error', req.url)
-      );
-    }
-
-    const userProfile = await userProfileResponse.json();
-    const { id: platformId, username }: { id: string; username: string } =
-      userProfile.data;
-
-    // Create social account in the database
-    const platformName: Platform = 'TWITTER';
-
-    const socialAccountData = {
-      platform: platformName,
-      platformId,
-      username,
-      accessToken: tokens.access_token,
-      refreshToken: tokens.refresh_token,
-      expiresIn: tokens.expires_in,
-    };
-
-    await upsertSocialAccount(socialAccountData);
-    // Clear the OAuth cookies
     const redirectUrl = new URL(
       '/dashboard?success=twitter_connected',
       req.url
     );
-    const response = NextResponse.redirect(redirectUrl);
 
-    response.headers.set(
+    const res = NextResponse.redirect(redirectUrl);
+
+    res.headers.set(
       'Set-Cookie',
-      serialize('twitter_oauth_state', '', {
+      serialize('twitter_oauth_token_secret', '', {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
@@ -150,20 +51,8 @@ export async function GET(req: NextRequest) {
       })
     );
 
-    response.headers.append(
-      'Set-Cookie',
-      serialize('twitter_oauth_code_verifier', '', {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 0,
-        path: '/',
-      })
-    );
-
-    return response;
+    return res;
   } catch (err) {
-    console.error('Error in X callback:', err);
     return NextResponse.redirect(
       new URL('/login?error=callback_error', req.url)
     );

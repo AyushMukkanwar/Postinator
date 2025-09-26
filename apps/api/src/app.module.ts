@@ -12,6 +12,7 @@ import { BullModule } from '@nestjs/bullmq';
 import { AppCacheModule } from './cache/cache.module';
 import { HealthModule } from './health/health.module';
 import { PostQueueModule } from './queue/post-queue.module';
+import { TwitterModule } from './twitter/twitter.module';
 
 @Module({
   imports: [
@@ -29,7 +30,7 @@ import { PostQueueModule } from './queue/post-queue.module';
     ]),
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: '.env',
+      envFilePath: ['.env.local', '.env'],
       ignoreEnvFile: process.env.NODE_ENV === 'test',
     }),
     BullModule.forRootAsync({
@@ -61,6 +62,7 @@ import { PostQueueModule } from './queue/post-queue.module';
     PostQueueModule,
     AppCacheModule,
     HealthModule,
+    TwitterModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],

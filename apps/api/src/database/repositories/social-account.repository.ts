@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { SocialAccount, Prisma } from '@repo/db/prisma/generated/prisma';
+import { SocialAccount, Prisma } from '@repo/db';
 import { BaseRepository } from './base.repository';
 
 export interface ISocialAccountRepository
@@ -12,6 +12,9 @@ export interface ISocialAccountRepository
   > {
   findUnique(
     where: Prisma.SocialAccountWhereUniqueInput
+  ): Promise<SocialAccount | null>;
+  findFirst(
+    where: Prisma.SocialAccountWhereInput
   ): Promise<SocialAccount | null>;
   upsert(args: Prisma.SocialAccountUpsertArgs): Promise<SocialAccount | null>;
 }
@@ -39,6 +42,12 @@ export class SocialAccountRepository implements ISocialAccountRepository {
         user: true,
       },
     });
+  }
+
+  async findFirst(
+    where: Prisma.SocialAccountWhereInput
+  ): Promise<SocialAccount | null> {
+    return this.prisma.socialAccount.findFirst({ where });
   }
 
   async findUnique(

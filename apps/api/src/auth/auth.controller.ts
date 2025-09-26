@@ -6,12 +6,23 @@ import {
   HttpStatus,
   Res,
   Req,
+  Get,
+  Query,
+  UseGuards,
+  InternalServerErrorException,
+  NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { AuthService, EnhancedTokenResponse } from './auth.service';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { IsNotEmpty, IsString } from 'class-validator';
 import { ConfigService } from '@nestjs/config';
+import { SocialAccountService } from '../social-account/social-account.service';
+import { JwtAuthGuard } from './guards/jwt.auth.guard';
+import { User } from './decorators/user.decorator';
+import { User as UserEntity, Platform, TokenType } from '@repo/db';
+import { TwitterService } from 'src/social-account/twitter.service';
 
 // DTOs for request validation
 export class ExchangeTokenDto {
@@ -40,7 +51,9 @@ export interface AuthResponse {
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
-    private readonly configService: ConfigService
+    private readonly configService: ConfigService,
+    private readonly socialAccountService: SocialAccountService,
+    private readonly twitterService: TwitterService
   ) {}
 
   private setCookieOptions(request: Request) {
@@ -112,5 +125,101 @@ export class AuthController {
 
     console.log('✅ Token refresh successful for user:', user.email);
     return { user, token };
+  }
+
+  @Get('twitter')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Initiate Twitter OAuth 1.0a flow' })
+  async getTwitterAuthUrl(@User() user: UserEntity, @Res() response: Response) {
+    try {
+      const { oauth_token, oauth_token_secret, oauth_callback_confirmed } =
+        await this.twitterService.getRequestToken();
+
+      if (
+        !oauth_token ||
+        !oauth_token_secret ||
+        oauth_callback_confirmed !== 'true'
+      ) {
+        throw new InternalServerErrorException(
+          'Failed to get valid request token from Twitter'
+        );
+      }
+
+      await this.socialAccountService.upsert(
+        {
+          platform: Platform.TWITTER,
+          tokenType: TokenType.OAUTH1,
+          accessToken: oauth_token,
+          accessSecret: oauth_token_secret,
+        },
+        user.id
+      );
+
+      const authUrl = this.twitterService.getAuthorizeUrl(oauth_token);
+      response.redirect(authUrl);
+    } catch (error) {
+      console.error('Error initiating Twitter auth:', error);
+      throw new InternalServerErrorException('Failed to initiate Twitter auth');
+    }
+  }
+
+  @Get('twitter/callback')
+  @ApiOperation({ summary: 'Handle Twitter OAuth 1.0a callback' })
+  async twitterAuthCallback(
+    @Query('oauth_token') oauthToken: string,
+    @Query('oauth_verifier') oauthVerifier: string,
+    @Res() response: Response
+  ) {
+    if (!oauthToken || !oauthVerifier) {
+      throw new UnauthorizedException('OAuth token or verifier missing');
+    }
+
+    try {
+      const tempAccount =
+        await this.socialAccountService.findByOAuthToken(oauthToken);
+
+      if (!tempAccount.accessSecret) {
+        throw new NotFoundException('OAuth token secret not found');
+      }
+
+      const {
+        accessToken,
+        accessTokenSecret,
+        userId,
+        username,
+        name,
+        profileImageUrl,
+      } = await this.twitterService.getAccessToken(
+        oauthToken,
+        oauthVerifier,
+        tempAccount.accessSecret
+      );
+
+      if (!accessToken || !accessTokenSecret || !userId || !username) {
+        throw new InternalServerErrorException(
+          'Failed to get valid access token from Twitter'
+        );
+      }
+
+      await this.socialAccountService.update(tempAccount.id, {
+        accessToken,
+        accessSecret: accessTokenSecret,
+        platformId: userId,
+        username,
+        displayName: name ?? undefined,
+        avatar: profileImageUrl ?? undefined,
+      });
+
+      response.redirect(
+        `${this.configService.get('WEB_URL')}/dashboard?new-account=true`
+      );
+    } catch (error) {
+      console.error('Error in Twitter auth callback:', error);
+      response.redirect(
+        `${this.configService.get(
+          'WEB_URL'
+        )}/dashboard?error=twitter-auth-failed`
+      );
+    }
   }
 }

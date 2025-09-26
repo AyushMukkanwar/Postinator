@@ -8,22 +8,35 @@ import {
   Delete,
   UseGuards,
 } from '@nestjs/common';
-import { SocialAccountService } from './social-account.service';
+import {
+  SocialAccountService,
+  StrippedSocialAccount,
+} from './social-account.service';
 import { CreateSocialAccountDto } from './dto/create-social-account.dto';
+import { TwitterAccessTokenDto } from './dto/twitter-access-token.dto';
 import { UpdateSocialAccountDto } from './dto/update-social-account.dto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt.auth.guard';
 import { ResourceOwnerGuard } from 'src/auth/guards/resource-owner.guard';
 import { ResourceParamName } from 'src/auth/decorators/resource-param.decorator';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { SocialAccountEntity } from './entities/social-account.entity';
-import { User as UserModel } from '@repo/db/prisma/generated/prisma';
+import {
+  User as UserModel,
+  SocialAccount,
+  Platform,
+  TokenType,
+} from '@repo/db';
 import { User } from 'src/auth/decorators/user.decorator';
+import { TwitterService } from './twitter.service';
 
 @ApiTags('social-account')
 @UseGuards(JwtAuthGuard)
 @Controller('social-account')
 export class SocialAccountController {
-  constructor(private readonly socialAccountService: SocialAccountService) {}
+  constructor(
+    private readonly socialAccountService: SocialAccountService,
+    private readonly twitterService: TwitterService
+  ) {}
 
   @Post('upsert')
   @ApiOperation({ summary: 'Create or update a social account' })
@@ -34,10 +47,10 @@ export class SocialAccountController {
   })
   @ApiResponse({ status: 400, description: 'Bad request' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  upsert(
+  async upsert(
     @Body() createSocialAccountDto: CreateSocialAccountDto,
     @User() user: UserModel
-  ) {
+  ): Promise<StrippedSocialAccount> {
     const userId = user.id;
     return this.socialAccountService.upsert(createSocialAccountDto, userId);
   }
@@ -49,7 +62,7 @@ export class SocialAccountController {
     description: 'Social accounts retrieved successfully',
     type: [SocialAccountEntity],
   })
-  findAll() {
+  async findAll(): Promise<StrippedSocialAccount[]> {
     return this.socialAccountService.findAll();
   }
 
@@ -60,7 +73,7 @@ export class SocialAccountController {
     description: 'Social accounts retrieved successfully',
     type: [SocialAccountEntity],
   })
-  findMine(@User() user: UserModel) {
+  async findMine(@User() user: UserModel): Promise<StrippedSocialAccount[]> {
     const userId = user.id;
     return this.socialAccountService.findAll({ where: { userId } });
   }
@@ -76,7 +89,7 @@ export class SocialAccountController {
   })
   @ApiResponse({ status: 404, description: 'Social account not found' })
   @ApiParam({ name: 'id', type: 'string', description: 'Social Account ID' })
-  findOne(@Param('id') id: string) {
+  async findOne(@Param('id') id: string): Promise<StrippedSocialAccount> {
     return this.socialAccountService.findOne(id);
   }
 
@@ -92,10 +105,10 @@ export class SocialAccountController {
   @ApiResponse({ status: 404, description: 'Social account not found' })
   @ApiResponse({ status: 400, description: 'Bad request' })
   @ApiParam({ name: 'id', type: 'string', description: 'Social Account ID' })
-  update(
+  async update(
     @Param('id') id: string,
     @Body() updateSocialAccountDto: UpdateSocialAccountDto
-  ) {
+  ): Promise<StrippedSocialAccount> {
     return this.socialAccountService.update(id, updateSocialAccountDto);
   }
 
@@ -110,7 +123,61 @@ export class SocialAccountController {
   })
   @ApiResponse({ status: 404, description: 'Social account not found' })
   @ApiParam({ name: 'id', type: 'string', description: 'Social Account ID' })
-  remove(@Param('id') id: string) {
+  async remove(@Param('id') id: string): Promise<SocialAccount> {
     return this.socialAccountService.remove(id);
+  }
+
+  @Get('twitter/request-token')
+  @ApiOperation({ summary: 'Get Twitter request token' })
+  @ApiResponse({
+    status: 200,
+    description: 'Twitter request token retrieved successfully',
+  })
+  async getRequestToken() {
+    return this.twitterService.getRequestToken();
+  }
+
+  @Post('twitter/access-token')
+  @ApiOperation({
+    summary: 'Get Twitter access token and create social account',
+  })
+  @ApiResponse({
+    status: 200,
+    description:
+      'Twitter access token retrieved and social account created successfully',
+  })
+  async getAccessToken(
+    @Body()
+    { oauth_token, oauth_verifier, oauth_token_secret }: TwitterAccessTokenDto,
+    @User() user: UserModel
+  ) {
+    const {
+      accessToken,
+      accessTokenSecret,
+      userId,
+      username,
+      name,
+      profileImageUrl,
+    } = await this.twitterService.getAccessToken(
+      oauth_token,
+      oauth_verifier,
+      oauth_token_secret
+    );
+
+    const socialAccount = await this.socialAccountService.upsert(
+      {
+        platform: 'TWITTER',
+        accessToken: accessToken,
+        accessSecret: accessTokenSecret,
+        platformId: userId,
+        displayName: name,
+        username,
+        avatar: profileImageUrl,
+        tokenType: TokenType.OAUTH1,
+      },
+      user.id
+    );
+
+    return socialAccount;
   }
 }

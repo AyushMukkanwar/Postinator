@@ -6,24 +6,33 @@ import {
   IsOptional,
   IsString,
 } from 'class-validator';
-import { Platform } from '@repo/db/prisma/generated/prisma';
+import { Platform, TokenType } from '@repo/db';
 
 export class CreateSocialAccountDto {
   @ApiProperty({
     description: 'Social media platform',
     enum: Platform,
-    example: Platform.LINKEDIN,
+    example: 'LINKEDIN',
   })
-  @IsEnum(Platform)
   platform: Platform;
 
-  @ApiProperty({ description: 'Platform user ID', example: '12345678' })
+  @ApiProperty({
+    description: 'Platform user ID',
+    example: '12345678',
+    required: false,
+  })
+  @IsOptional()
   @IsString()
-  platformId: string;
+  platformId?: string;
 
-  @ApiProperty({ description: 'Platform username', example: 'johndoe' })
+  @ApiProperty({
+    description: 'Platform username',
+    example: 'johndoe',
+    required: false,
+  })
+  @IsOptional()
   @IsString()
-  username: string;
+  username?: string;
 
   @ApiProperty({
     description: 'Display name on platform',
@@ -44,14 +53,30 @@ export class CreateSocialAccountDto {
   avatar?: string;
 
   @ApiProperty({
-    description: 'Access token for platform API',
+    description: 'Authentication protocol used',
+    enum: TokenType,
+    example: 'OAUTH2',
+  })
+  tokenType: TokenType;
+
+  @ApiProperty({
+    description: 'Access token for the platform API (OAuth1 or OAuth2)',
     example: 'access_token_123',
   })
   @IsString()
   accessToken: string;
 
   @ApiProperty({
-    description: 'Refresh token for platform API',
+    description: 'Access token secret (for OAuth1)',
+    required: false,
+    example: 'access_secret_789',
+  })
+  @IsOptional()
+  @IsString()
+  accessSecret?: string;
+
+  @ApiProperty({
+    description: 'Refresh token for the platform API (for OAuth2)',
     required: false,
     example: 'refresh_token_456',
   })
@@ -60,7 +85,7 @@ export class CreateSocialAccountDto {
   refreshToken?: string;
 
   @ApiProperty({
-    description: 'Token expiration in seconds',
+    description: 'Token expiration in seconds from now (for OAuth2)',
     required: false,
     example: 3600,
   })
@@ -72,6 +97,4 @@ export class CreateSocialAccountDto {
   @IsBoolean()
   @IsOptional()
   isActive?: boolean;
-
-  // Remove userId - it will come from JWT token
 }

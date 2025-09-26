@@ -5,9 +5,14 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
-    "build": "tsc -b",
     "db:generate": "prisma generate",
-    "db:push": "prisma db push"
+    "db:push": "prisma db push",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate deploy",
+    "prisma:migrate:dev": "prisma migrate dev",
+    "prisma:studio": "prisma studio",
+    "build": "npm run prisma:generate && tsc && cp -r src/generated dist/",
+    "dev": "npm run prisma:generate && tsc --watch"
   },
   "dependencies": {
     "@prisma/client": "^5.14.0"

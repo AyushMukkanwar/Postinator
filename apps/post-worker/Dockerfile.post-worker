@@ -18,12 +18,17 @@ COPY apps/api/package.json ./apps/api/
 COPY apps/post-worker/package.json ./apps/post-worker/
 COPY apps/web/package.json ./apps/web/
 COPY packages/db/package.json ./packages/db/
+COPY packages/db/tsconfig.json ./packages/db/
+COPY packages/db/src ./packages/db/src/
 COPY packages/ui/package.json ./packages/ui/
 COPY packages/eslint-config/package.json ./packages/eslint-config/
-COPY packages/typescript-config/package.json ./packages/typescript-config/
+COPY packages/typescript-config ./packages/typescript-config/
 
 # Install all dependencies
 RUN pnpm install --filter=post-worker...
+
+# Build the shared db package
+RUN pnpm --filter @repo/db build
 
 # Copy the rest of the source code
 COPY . .
