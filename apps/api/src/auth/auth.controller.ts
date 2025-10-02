@@ -111,8 +111,6 @@ export class AuthController implements OnModuleDestroy {
     @Req() request: Request,
     @Res({ passthrough: true }) response: Response
   ): Promise<AuthResponse> {
-    console.log('🔄 Processing token exchange request');
-
     const { token, user }: EnhancedTokenResponse =
       await this.authService.exchangeSupabaseToken(
         exchangeTokenDto.supabaseToken
@@ -120,11 +118,8 @@ export class AuthController implements OnModuleDestroy {
 
     const cookieOptions = this.setCookieOptions(request);
 
-    console.log('🍪 Setting cookie with options:', cookieOptions);
-
     response.cookie('access_token', token, cookieOptions);
 
-    console.log('✅ Token exchange successful for user:', user.email);
     return { user, token };
   }
 
@@ -136,15 +131,12 @@ export class AuthController implements OnModuleDestroy {
     @Req() request: Request,
     @Res({ passthrough: true }) response: Response
   ): Promise<AuthResponse> {
-    console.log('🔄 Processing token refresh request');
-
     const { token, user }: EnhancedTokenResponse =
       await this.authService.refreshToken(refreshTokenDto.refreshToken);
 
     const cookieOptions = this.setCookieOptions(request);
     response.cookie('access_token', token, cookieOptions);
 
-    console.log('✅ Token refresh successful for user:', user.email);
     return { user, token };
   }
 
@@ -152,9 +144,6 @@ export class AuthController implements OnModuleDestroy {
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Initiate Twitter OAuth 1.0a flow' })
   async getTwitterAuthUrl(@User() user: UserEntity, @Res() response: Response) {
-    console.log(
-      '[Auth Controller] Using direct Redis client for Twitter auth.'
-    );
     try {
       const { oauth_token, oauth_token_secret, oauth_callback_confirmed } =
         await this.twitterService.getRequestToken();

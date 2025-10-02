@@ -14,18 +14,9 @@ export interface JwtPayload {
 }
 
 const fromCookie = (req: Request) => {
-  console.log('--- Inside fromCookie extractor ---');
   let token = null;
   if (req && req.cookies) {
-    console.log('Cookies found on request:', req.cookies);
     token = req.cookies['access_token'];
-    if (token) {
-      console.log('access_token found in cookie:', token);
-    } else {
-      console.log('access_token not found in cookie.');
-    }
-  } else {
-    console.log('No cookies found on request.');
   }
   return token;
 };

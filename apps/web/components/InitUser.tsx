@@ -12,7 +12,6 @@ export default function InitUser() {
       setLoading(true); // Set loading to true before fetching
       try {
         const user = await getUser();
-        console.log('User = ', user);
         if (user) {
           setUser(user);
         } else {

@@ -57,7 +57,6 @@ export class UserRepository implements IUserRepository {
         },
       },
     });
-    console.log('User from backend = ', user);
     if (!user) throw new NotFoundException(`User with ID ${id} not found`);
     return user;
   }

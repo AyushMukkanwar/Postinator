@@ -96,7 +96,6 @@ async function getCustomJwt(): Promise<string | null> {
     const isExpired = decoded.exp * 1000 <= Date.now() + bufferTime * 1000;
 
     if (isExpired) {
-      console.log('Custom JWT is expired, will refresh');
       return null;
     }
 

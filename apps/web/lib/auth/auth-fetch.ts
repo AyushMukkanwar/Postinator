@@ -126,19 +126,10 @@ export async function authenticatedFetch(
   try {
     // Step 1: Try to get existing custom JWT
     let customJwt = await getCustomJwt();
-    console.log(
-      'authenticatedFetch: customJwt after getCustomJwt:',
-      customJwt ? 'present' : 'null'
-    );
 
     // Step 2: If no valid JWT, try to get one via token exchange
     if (!customJwt) {
-      console.log('authenticatedFetch: No custom JWT, attempting exchange...');
       customJwt = await exchangeTokenForCustomJwt();
-      console.log(
-        'authenticatedFetch: customJwt after exchange:',
-        customJwt ? 'present' : 'null'
-      );
     }
 
     // Step 3: Make the request with the custom JWT
@@ -146,29 +137,13 @@ export async function authenticatedFetch(
     headers.set('Content-Type', 'application/json');
     headers.set('Authorization', `Bearer ${customJwt}`);
 
-    console.log('authenticatedFetch: Making fetch request to:', fullUrl);
-    console.log('authenticatedFetch: Request options:', {
-      method: options.method || 'GET',
-      body: options.body,
-      headers: Object.fromEntries(headers.entries()),
-    });
-
     const response = await fetch(fullUrl, {
       ...options,
       headers: headers,
     });
 
-    console.log(
-      'authenticatedFetch: Received response with status:',
-      response.status
-    );
-
     // Step 4: Handle token expiry (401 responses)
     if (response.status === 401) {
-      console.log(
-        'authenticatedFetch: Received 401, attempting token refresh...'
-      );
-
       // Clear the invalid token
       await clearCustomJwt();
 
@@ -186,10 +161,6 @@ export async function authenticatedFetch(
         headers: headers,
       });
 
-      console.log(
-        'authenticatedFetch: Retried request status:',
-        retryResponse.status
-      );
       return retryResponse;
     }
 
@@ -214,7 +185,6 @@ async function getCustomJwt(): Promise<string | null> {
     const customJwt = cookieStore.get('access_token')?.value;
 
     if (!customJwt) {
-      console.log('📍 No access_token cookie found');
       return null;
     }
 
@@ -225,15 +195,12 @@ async function getCustomJwt(): Promise<string | null> {
       const isExpired = decoded.exp * 1000 <= Date.now() + bufferTime * 1000;
 
       if (isExpired) {
-        console.log('⏰ Custom JWT is expired, will refresh');
         await clearCustomJwt();
         return null;
       }
 
-      console.log('✅ Found valid custom JWT in cookies');
       return customJwt;
     } catch (decodeError) {
-      console.log('❌ Failed to decode JWT, clearing cookie');
       await clearCustomJwt();
       return null;
     }
@@ -256,7 +223,6 @@ async function clearCustomJwt(): Promise<void> {
       sameSite: 'strict',
       path: '/',
     });
-    console.log('🗑️ Cleared access_token cookie');
   } catch (error) {
     console.error('Error clearing custom JWT:', error);
   }
@@ -266,9 +232,6 @@ async function clearCustomJwt(): Promise<void> {
  * Exchange Supabase token for custom JWT via your backend
  */
 async function exchangeTokenForCustomJwt(): Promise<string> {
-  console.log(
-    '********Attempting to exchange Supabase token for custom JWT********'
-  );
   try {
     // Get Supabase session
     const supabase = await createSupabaseServerClient();
@@ -349,8 +312,6 @@ async function exchangeTokenForCustomJwt(): Promise<string> {
         // Ignore errors in server components
       }
     }
-
-    console.log('🎉 Successfully exchanged Supabase token for custom JWT');
 
     // The httpOnly cookie should now be set automatically by your NestJS backend
     // Return the token for immediate use

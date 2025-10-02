@@ -30,9 +30,6 @@ export function PlatformAccess() {
       // Initiate OAuth flow
       if (platform === 'TWITTER') {
         window.location.href = `${process.env.NEXT_PUBLIC_CLIENT_BACKEND_API_URL}/auth/twitter`;
-      } else {
-        // Handle other platform toggle logic here
-        console.log(`Toggle ${platform}`);
       }
     }
   };

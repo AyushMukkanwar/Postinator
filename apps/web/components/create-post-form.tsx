@@ -115,9 +115,7 @@ export function CreatePostForm() {
         socialAccountId: formData.socialAccountId,
       };
 
-      console.log('Submitting post data:', postData);
       const result = await createPost(postData);
-      console.log('Received result from createPost:', result);
 
       if (result.error) {
         setError(result.error);
