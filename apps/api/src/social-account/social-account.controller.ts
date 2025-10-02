@@ -25,9 +25,9 @@ import {
   SocialAccount,
   Platform,
   TokenType,
-} from '@repo/db';
+} from '../../generated/prisma';
 import { User } from 'src/auth/decorators/user.decorator';
-import { TwitterService } from './twitter.service';
+import { TwitterService } from '../twitter/twitter.service';
 
 @ApiTags('social-account')
 @UseGuards(JwtAuthGuard)

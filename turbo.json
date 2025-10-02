@@ -1,7 +1,7 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "globalDependencies": ["**/.env.*local"],
-  "pipeline": {
+  "tasks": {
     "build": {
       "dependsOn": ["^build"],
       "outputs": ["dist/**", ".next/**", "!.next/cache/**"]
@@ -10,22 +10,17 @@
       "cache": false,
       "persistent": true
     },
+    "lint": {
+      "outputs": []
+    },
     "start": {
       "dependsOn": ["build"]
-    }
-  },
-  "tasks": {
-    "api#dev": {
-      "command": "nest start api --watch",
-      "dependsOn": ["@repo/db#generate"]
     },
-    "post-worker#dev": {
-      "command": "nest start post-worker --watch",
-      "dependsOn": ["@repo/db#generate"]
+    "typecheck": {
+      "outputs": []
     },
-    "web#dev": {
-      "command": "next dev",
-      "dependsOn": ["@repo/db#generate"]
+    "db:generate": {
+      "cache": false
     }
   }
 }

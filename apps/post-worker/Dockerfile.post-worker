@@ -1,14 +1,5 @@
 # Dockerfile.post-worker (for NestJS post-worker)
-FROM node:20-slim
-
-# Set the working directory
-WORKDIR /app
-
-# Install pnpm
-RUN npm install -g pnpm
-
-# Install build tools for native addons and openssl for Prisma
-RUN apt-get update && apt-get install -y python3 make g++ openssl curl
+FROM uploader-base
 
 # Copy root package management files
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
@@ -20,12 +11,16 @@ COPY apps/web/package.json ./apps/web/
 COPY packages/db/package.json ./packages/db/
 COPY packages/db/tsconfig.json ./packages/db/
 COPY packages/db/src ./packages/db/src/
+COPY packages/db/prisma ./packages/db/prisma/
 COPY packages/ui/package.json ./packages/ui/
 COPY packages/eslint-config/package.json ./packages/eslint-config/
 COPY packages/typescript-config ./packages/typescript-config/
 
 # Install all dependencies
 RUN pnpm install --filter=post-worker...
+
+# Generate Prisma client
+RUN pnpm --filter @repo/db exec -- prisma generate
 
 # Build the shared db package
 RUN pnpm --filter @repo/db build

@@ -1,20 +1,83 @@
 // apps/api/src/twitter/twitter.service.ts
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { TwitterApi } from 'twitter-api-v2';
 
 @Injectable()
 export class TwitterService {
-  constructor(private configService: ConfigService) {
-    // Ensure the required config values are available
-    const apiKey = this.configService.get<string>('TWITTER_API_KEY');
-    const apiSecret = this.configService.get<string>('TWITTER_API_SECRET');
+  private client: TwitterApi;
 
-    if (!apiKey || !apiSecret) {
+  constructor(private configService: ConfigService) {
+    const apiKey = this.configService.get<string>('TWITTER_CLIENT_ID');
+    const apiSecret = this.configService.get<string>('TWITTER_CLIENT_SECRET');
+    const callbackUrl = this.configService.get<string>('TWITTER_REDIRECT_URI');
+
+    if (!apiKey || !apiSecret || !callbackUrl) {
       throw new Error(
-        'Twitter API credentials are missing from environment variables'
+        'Twitter API credentials or callback URL are missing from environment variables'
       );
     }
+
+    this.client = new TwitterApi({
+      appKey: apiKey,
+      appSecret: apiSecret,
+    });
   }
 
-  // Your Twitter service methods here
+  async getRequestToken(): Promise<{
+    oauth_token: string;
+    oauth_token_secret: string;
+    oauth_callback_confirmed: string;
+  }> {
+    const callbackUrl = this.configService.get<string>('TWITTER_REDIRECT_URI');
+    if (!callbackUrl) {
+      throw new InternalServerErrorException(
+        'Twitter callback URL not configured'
+      );
+    }
+    return this.client.generateAuthLink(callbackUrl);
+  }
+
+  getAuthorizeUrl(oauth_token: string): string {
+    return `https://api.twitter.com/oauth/authorize?oauth_token=${oauth_token}`;
+  }
+
+  async getAccessToken(
+    oauth_token: string,
+    oauth_verifier: string,
+    oauth_token_secret: string
+  ): Promise<{
+    accessToken: string;
+    accessTokenSecret: string;
+    userId: string;
+    username: string;
+    name?: string;
+    profileImageUrl?: string;
+  }> {
+    const client = new TwitterApi({
+      appKey: this.configService.get<string>('TWITTER_CLIENT_ID')!,
+      appSecret: this.configService.get<string>('TWITTER_CLIENT_SECRET')!,
+      accessToken: oauth_token,
+      accessSecret: oauth_token_secret,
+    });
+
+    const {
+      accessToken,
+      accessSecret,
+      client: loggedClient,
+    } = await client.login(oauth_verifier);
+
+    const {
+      data: { id, username, name, profile_image_url },
+    } = await loggedClient.v2.me({ 'user.fields': ['profile_image_url'] });
+
+    return {
+      accessToken,
+      accessTokenSecret: accessSecret,
+      userId: id,
+      username,
+      name,
+      profileImageUrl: profile_image_url,
+    };
+  }
 }

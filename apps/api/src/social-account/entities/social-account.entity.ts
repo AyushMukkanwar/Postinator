@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Platform, TokenType } from '@repo/db';
+import { Platform, TokenType } from '../../../generated/prisma';
 
 export class SocialAccountEntity {
   @ApiProperty({

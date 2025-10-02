@@ -12,6 +12,8 @@ import {
   InternalServerErrorException,
   NotFoundException,
   UnauthorizedException,
+  Inject,
+  OnModuleDestroy,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { AuthService, EnhancedTokenResponse } from './auth.service';
@@ -21,8 +23,13 @@ import { ConfigService } from '@nestjs/config';
 import { SocialAccountService } from '../social-account/social-account.service';
 import { JwtAuthGuard } from './guards/jwt.auth.guard';
 import { User } from './decorators/user.decorator';
-import { User as UserEntity, Platform, TokenType } from '@repo/db';
-import { TwitterService } from 'src/social-account/twitter.service';
+import {
+  User as UserEntity,
+  Platform,
+  TokenType,
+} from '../../generated/prisma';
+import { TwitterService } from '../twitter/twitter.service';
+import { createClient, RedisClientType } from 'redis';
 
 // DTOs for request validation
 export class ExchangeTokenDto {
@@ -48,21 +55,38 @@ export interface AuthResponse {
 
 @ApiTags('auth')
 @Controller('auth')
-export class AuthController {
+export class AuthController implements OnModuleDestroy {
+  private redisClient: RedisClientType;
+
   constructor(
     private readonly authService: AuthService,
     private readonly configService: ConfigService,
     private readonly socialAccountService: SocialAccountService,
     private readonly twitterService: TwitterService
-  ) {}
+  ) {
+    // Initialize Redis client directly
+    this.redisClient = createClient({
+      socket: {
+        host: this.configService.get('REDIS_HOST'),
+        port: this.configService.get('REDIS_PORT'),
+      },
+    });
+    this.redisClient.connect().catch((err) => {
+      console.error('Failed to connect to Redis:', err);
+    });
+  }
+
+  async onModuleDestroy() {
+    await this.redisClient.quit();
+  }
 
   private setCookieOptions(request: Request) {
     const isProduction =
       this.configService.get<string>('NODE_ENV') === 'production';
     const cookieDomain = this.configService.get<string>('COOKIE_DOMAIN');
 
-    // In development/Docker, don't set domain to allow cross-container communication
-    const domain = isProduction ? cookieDomain : undefined;
+    // In development/Docker, set domain to localhost to allow cross-container communication
+    const domain = isProduction ? cookieDomain : 'localhost';
 
     return {
       httpOnly: true,
@@ -96,10 +120,7 @@ export class AuthController {
 
     const cookieOptions = this.setCookieOptions(request);
 
-    console.log('🍪 Setting cookie with options:', {
-      ...cookieOptions,
-      domain: cookieOptions.domain || 'none (cross-container)',
-    });
+    console.log('🍪 Setting cookie with options:', cookieOptions);
 
     response.cookie('access_token', token, cookieOptions);
 
@@ -131,6 +152,9 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Initiate Twitter OAuth 1.0a flow' })
   async getTwitterAuthUrl(@User() user: UserEntity, @Res() response: Response) {
+    console.log(
+      '[Auth Controller] Using direct Redis client for Twitter auth.'
+    );
     try {
       const { oauth_token, oauth_token_secret, oauth_callback_confirmed } =
         await this.twitterService.getRequestToken();
@@ -145,21 +169,22 @@ export class AuthController {
         );
       }
 
-      await this.socialAccountService.upsert(
-        {
-          platform: Platform.TWITTER,
-          tokenType: TokenType.OAUTH1,
-          accessToken: oauth_token,
-          accessSecret: oauth_token_secret,
-        },
-        user.id
-      );
+      // Store the temporary request token secret and user ID in Redis
+      const cacheValue = JSON.stringify({
+        secret: oauth_token_secret,
+        userId: user.id,
+      });
+      await this.redisClient.set(oauth_token, cacheValue, { EX: 600 }); // 10 minute expiry
 
       const authUrl = this.twitterService.getAuthorizeUrl(oauth_token);
       response.redirect(authUrl);
     } catch (error) {
       console.error('Error initiating Twitter auth:', error);
-      throw new InternalServerErrorException('Failed to initiate Twitter auth');
+      const message =
+        error instanceof Error ? error.message : 'Unknown Twitter API error';
+      throw new InternalServerErrorException(
+        `Failed to initiate Twitter auth: ${message}`
+      );
     }
   }
 
@@ -175,12 +200,24 @@ export class AuthController {
     }
 
     try {
-      const tempAccount =
-        await this.socialAccountService.findByOAuthToken(oauthToken);
+      // Retrieve the temporary request token secret and user ID from Redis
+      const cachedValueString = await this.redisClient.get(oauthToken);
 
-      if (!tempAccount.accessSecret) {
-        throw new NotFoundException('OAuth token secret not found');
+      if (!cachedValueString) {
+        throw new NotFoundException(
+          'OAuth token secret not found in cache or has expired.'
+        );
       }
+
+      const cachedValue = JSON.parse(cachedValueString) as {
+        secret: string;
+        userId: string;
+      };
+
+      const { secret: oauthTokenSecret, userId: cachedUserId } = cachedValue;
+
+      // We have what we need, so we can delete the temporary token from the cache
+      await this.redisClient.del(oauthToken);
 
       const {
         accessToken,
@@ -192,7 +229,7 @@ export class AuthController {
       } = await this.twitterService.getAccessToken(
         oauthToken,
         oauthVerifier,
-        tempAccount.accessSecret
+        oauthTokenSecret
       );
 
       if (!accessToken || !accessTokenSecret || !userId || !username) {
@@ -201,14 +238,20 @@ export class AuthController {
         );
       }
 
-      await this.socialAccountService.update(tempAccount.id, {
-        accessToken,
-        accessSecret: accessTokenSecret,
-        platformId: userId,
-        username,
-        displayName: name ?? undefined,
-        avatar: profileImageUrl ?? undefined,
-      });
+      // Now that we have the permanent access token, we can upsert the social account
+      await this.socialAccountService.upsert(
+        {
+          platform: Platform.TWITTER,
+          tokenType: TokenType.OAUTH1,
+          platformId: userId,
+          username,
+          displayName: name ?? undefined,
+          avatar: profileImageUrl ?? undefined,
+          accessToken,
+          accessSecret: accessTokenSecret,
+        },
+        cachedUserId
+      );
 
       response.redirect(
         `${this.configService.get('WEB_URL')}/dashboard?new-account=true`

@@ -1,6 +1,10 @@
-version: '3.8'
-
 services:
+  uploader-base:
+    build:
+      context: .
+      dockerfile: Dockerfile.base
+    image: uploader-base
+
   redis:
     image: redis:alpine
     container_name: redis-dev
@@ -29,14 +33,11 @@ services:
     volumes:
       # Mount source code for hot reloading (but not node_modules or generated files)
       - ./apps/api/src:/app/apps/api/src
-      - ./packages/db/src:/app/packages/db/src
-      - ./packages/db/prisma:/app/packages/db/prisma
       - ./turbo.json:/app/turbo.json:ro
       - ./package.json:/app/package.json:ro
       # IMPORTANT: Preserve container's node_modules
       - /app/node_modules
       - /app/apps/api/node_modules
-      - /app/packages/db/node_modules
     env_file:
       - apps/api/.env
     environment:
@@ -46,8 +47,8 @@ services:
     stdin_open: true
     tty: true
     depends_on:
-      redis:
-        condition: service_healthy
+      - uploader-base
+      - redis
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://localhost:3001/health']
       interval: 30s
@@ -61,35 +62,27 @@ services:
   post-worker:
     build:
       context: .
-      dockerfile: apps/post-worker/Dockerfile.debug
+      dockerfile: apps/post-worker/Dockerfile.post-worker
     dns:
       - 8.8.8.8
       - 8.8.4.4
     volumes:
       # Mount source code for hot reloading
       - ./apps/post-worker/src:/app/apps/post-worker/src
-      - ./packages/db/src:/app/packages/db/src
-      - ./packages/db/prisma:/app/packages/db/prisma
       # IMPORTANT: Preserve container's node_modules
       - /app/node_modules
       - /app/apps/post-worker/node_modules
-      - /app/packages/db/node_modules
     env_file:
       - apps/post-worker/.env
     environment:
       - NODE_ENV=development
     # Use the dev script defined in package.json
-    command:
-      [
-        'sh',
-        '-c',
-        'ping -c 4 db.qxuopanxxmenodkwlbof.supabase.co && pnpm --filter=post-worker run dev',
-      ]
+    command: ['pnpm', '--filter=post-worker', 'run', 'dev']
     stdin_open: true
     tty: true
     depends_on:
-      redis:
-        condition: service_healthy
+      - uploader-base
+      - redis
     restart: unless-stopped
     networks:
       - app-network
@@ -106,13 +99,11 @@ services:
     volumes:
       # Mount source code for hot reloading
       - ./apps/web:/app/apps/web
-      - ./packages:/app/packages
       - ./turbo.json:/app/turbo.json:ro
       - ./package.json:/app/package.json:ro
       # IMPORTANT: Preserve container's node_modules
       - /app/node_modules
       - /app/apps/web/node_modules
-      - /app/packages/db/node_modules
     env_file:
       - apps/web/.env
     environment:
@@ -122,8 +113,8 @@ services:
     stdin_open: true
     tty: true
     depends_on:
-      api:
-        condition: service_healthy
+      - uploader-base
+      - api
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://localhost:3000/api/health']
       interval: 30s

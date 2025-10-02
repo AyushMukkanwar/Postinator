@@ -6,7 +6,7 @@ import {
   IsDate,
   IsEnum,
 } from 'class-validator';
-import { Platform } from '@repo/db';
+import { Platform } from '../../../generated/prisma';
 import { Type } from 'class-transformer';
 
 export class CreatePostDto {

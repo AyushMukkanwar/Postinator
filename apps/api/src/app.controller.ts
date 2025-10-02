@@ -2,7 +2,7 @@ import { Controller, Get, UseGuards } from '@nestjs/common';
 import { AppService } from './app.service';
 import { JwtAuthGuard } from './auth/guards/jwt.auth.guard';
 import { User } from './auth/decorators/user.decorator';
-import { User as UserModel } from '@repo/db';
+import { User as UserModel } from '../generated/prisma';
 
 @Controller()
 export class AppController {

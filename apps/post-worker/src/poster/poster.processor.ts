@@ -2,12 +2,18 @@ import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
 import { Logger, OnModuleDestroy } from '@nestjs/common';
+import { TwitterService } from './twitter.service';
+import { EncryptionService } from '../encryption/encryption.service';
 
 @Processor('post')
 export class PosterProcessor extends WorkerHost implements OnModuleDestroy {
   private readonly logger = new Logger(PosterProcessor.name);
 
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly twitterService: TwitterService,
+    private readonly encryptionService: EncryptionService,
+  ) {
     super();
   }
 
@@ -37,17 +43,51 @@ export class PosterProcessor extends WorkerHost implements OnModuleDestroy {
     }
 
     try {
-      // Simulate posting to the social media platform
+      let platformPostId: string;
+
       this.logger.log(
-        `Posting to ${post.socialAccount.platform} for user ${post.userId}: "${post.content}"`,
+        `Processing post for platform: ${post.socialAccount.platform}`,
       );
 
-      if (post.content === 'FAIL') {
-        throw new Error('Simulated post failure');
-      }
+      if (post.socialAccount.platform === 'TWITTER') {
+        const { accessToken, accessSecret } = post.socialAccount;
 
-      // Simulate a successful post with a fake platform ID
-      const platformPostId = `fake-post-id-${Date.now()}`;
+        if (!accessToken || !accessSecret) {
+          throw new Error('Twitter access token or secret is missing.');
+        }
+
+        const decryptedAccessToken =
+          this.encryptionService.decrypt(accessToken);
+        const decryptedAccessSecret =
+          this.encryptionService.decrypt(accessSecret);
+
+        this.logger.log(
+          `Decrypted Access Token (partial): ${decryptedAccessToken.substring(0, 5)}...`,
+        );
+        this.logger.log(
+          `Decrypted Access Secret (partial): ${decryptedAccessSecret.substring(0, 5)}...`,
+        );
+
+        const { tweetId } = await this.twitterService.postTweet(
+          decryptedAccessToken,
+          decryptedAccessSecret,
+          post.content,
+        );
+        platformPostId = tweetId;
+        this.logger.log(
+          `Twitter service response: ${JSON.stringify({ tweetId })}`,
+        );
+      } else {
+        // Simulate posting to other social media platforms
+        this.logger.log(
+          `Posting to ${post.socialAccount.platform} for user ${post.userId}: "${post.content}"`,
+        );
+
+        if (post.content === 'FAIL') {
+          throw new Error('Simulated post failure');
+        }
+        platformPostId = `fake-post-id-${Date.now()}`;
+      }
 
       await this.prisma.post.update({
         where: { id: postId },

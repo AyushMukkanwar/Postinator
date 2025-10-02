@@ -1,7 +1,7 @@
 // src/database/repositories/user.repository.ts
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { User, Prisma } from '@repo/db';
+import { User, Prisma } from '../../../generated/prisma';
 import { BaseRepository } from './base.repository';
 
 export interface IUserRepository

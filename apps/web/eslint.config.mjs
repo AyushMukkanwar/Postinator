@@ -1,6 +1,7 @@
 import config from '../../packages/eslint-config/index.js';
 import reactInternal from '../../packages/eslint-config/react-internal.js';
-import { flatConfig as pluginNext } from '@next/eslint-plugin-next';
+import pkg from '@next/eslint-plugin-next';
+const { flatConfig: pluginNext } = pkg;
 
 export default [
   ...config,

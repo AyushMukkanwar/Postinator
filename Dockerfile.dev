@@ -1,0 +1,7 @@
+# Dockerfile.dev
+FROM uploader-base
+
+WORKDIR /app
+
+# Copy the rest of the source code
+COPY . .

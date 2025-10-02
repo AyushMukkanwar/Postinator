@@ -1,0 +1,96 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider      = "prisma-client-js"
+  output        = "../generated/prisma"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  supabaseId String?  @unique
+  email     String   @unique
+  name      String?
+  avatar    String?
+  timezone  String   @default("UTC") // IANA timezone identifier (e.g., "America/New_York")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  socialAccounts SocialAccount[]
+  posts         Post[]
+}
+
+model SocialAccount {
+  id            String    @id @default(cuid())
+  platform      Platform
+  platformId    String?
+  username      String?
+  displayName   String?
+  avatar        String?
+  
+  // Refactored token fields
+  tokenType     TokenType // This new field specifies the auth protocol
+  accessToken   String    // Stores OAUTH2 access_token or OAUTH1 oauth_token
+  accessSecret  String?   // Stores OAUTH1 oauth_token_secret
+  refreshToken  String?   // Stores OAUTH2 refresh_token
+  expiresAt     DateTime? // Stores OAUTH2 token expiry time
+
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+
+  // Relations
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  posts  Post[]
+
+  @@unique([userId, platform])
+}
+
+model Post {
+  id           String     @id @default(cuid())
+  content      String
+  media        String[]   @default([]) // Array of media URLs (images, videos)
+  scheduledFor DateTime
+  publishedAt  DateTime?
+  status       PostStatus @default(SCHEDULED)
+  platform     Platform
+  platformPostId String?  // ID from LinkedIn/Twitter after posting
+  errorMessage String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  
+  // Relations
+  userId          String
+  socialAccountId String
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  socialAccount   SocialAccount @relation(fields: [socialAccountId], references: [id], onDelete: Cascade)
+}
+
+enum Platform {
+  LINKEDIN
+  TWITTER
+}
+
+enum TokenType {
+  OAUTH1
+  OAUTH2
+}
+
+enum PostStatus {
+  DRAFT
+  SCHEDULED
+  PUBLISHING
+  PUBLISHED
+  FAILED
+  CANCELLED
+}

@@ -3,6 +3,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
 import { UserService } from 'src/user/user.service';
+import { Request } from 'express';
 
 export interface JwtPayload {
   supabaseId: string;
@@ -12,6 +13,23 @@ export interface JwtPayload {
   exp?: number;
 }
 
+const fromCookie = (req: Request) => {
+  console.log('--- Inside fromCookie extractor ---');
+  let token = null;
+  if (req && req.cookies) {
+    console.log('Cookies found on request:', req.cookies);
+    token = req.cookies['access_token'];
+    if (token) {
+      console.log('access_token found in cookie:', token);
+    } else {
+      console.log('access_token not found in cookie.');
+    }
+  } else {
+    console.log('No cookies found on request.');
+  }
+  return token;
+};
+
 @Injectable()
 export class SupabaseStrategy extends PassportStrategy(Strategy) {
   public constructor(
@@ -19,7 +37,10 @@ export class SupabaseStrategy extends PassportStrategy(Strategy) {
     private readonly userService: UserService
   ) {
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      jwtFromRequest: ExtractJwt.fromExtractors([
+        fromCookie,
+        ExtractJwt.fromAuthHeaderAsBearerToken(),
+      ]),
       ignoreExpiration: false,
       secretOrKey: configService.get<string>('SUPABASE_JWT_SECRET'),
     });

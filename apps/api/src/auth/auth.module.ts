@@ -14,6 +14,7 @@ import { UserService } from 'src/user/user.service';
 import { DatabaseModule } from 'src/database/database.module';
 import { AppCacheModule } from 'src/cache/cache.module';
 import { SocialAccountModule } from 'src/social-account/social-account.module';
+import { TwitterModule } from 'src/twitter/twitter.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { SocialAccountModule } from 'src/social-account/social-account.module';
     DatabaseModule,
     AppCacheModule,
     SocialAccountModule,
+    TwitterModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => {

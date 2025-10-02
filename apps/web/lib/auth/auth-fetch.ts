@@ -315,6 +315,41 @@ async function exchangeTokenForCustomJwt(): Promise<string> {
       throw new Error('No access token received from exchange endpoint');
     }
 
+    // Manually set the cookie on the response to the browser
+    const setCookieHeader = response.headers.get('set-cookie');
+    if (setCookieHeader) {
+      try {
+        const cookieStore = await cookies();
+        // Basic parsing, assumes one cookie is being set
+        const [cookiePair, ...directives] = setCookieHeader
+          .split(';')
+          .map((s) => s.trim());
+        const [name, value] = cookiePair.split('=');
+
+        const options: any = {};
+        for (const directive of directives) {
+          let [key, val] = directive.split('=');
+          key = key.toLowerCase();
+          if (val) val = val.trim();
+
+          if (key === 'expires') options.expires = new Date(val);
+          else if (key === 'max-age') options.maxAge = parseInt(val, 10);
+          else if (key === 'domain') options.domain = val;
+          else if (key === 'path') options.path = val;
+          else if (key === 'samesite')
+            options.sameSite = val.toLowerCase() as 'strict' | 'lax' | 'none';
+          else if (key === 'secure') options.secure = true;
+          else if (key === 'httponly') options.httpOnly = true;
+        }
+
+        if (name && value) {
+          cookieStore.set(name, value, options);
+        }
+      } catch (e) {
+        // Ignore errors in server components
+      }
+    }
+
     console.log('🎉 Successfully exchanged Supabase token for custom JWT');
 
     // The httpOnly cookie should now be set automatically by your NestJS backend
