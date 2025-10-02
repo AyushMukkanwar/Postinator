@@ -43,7 +43,6 @@ export class TwitterService {
         throw new Error(errorMessage);
       }
 
-      this.logger.log(`Successfully posted tweet: ${tweetData.id}`);
       return { tweetId: tweetData.id };
     } catch (error) {
       if (error instanceof Error) {

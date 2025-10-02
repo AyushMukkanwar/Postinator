@@ -5,6 +5,7 @@ import {
   IsArray,
   IsDate,
   IsEnum,
+  MaxLength,
 } from 'class-validator';
 import { Platform } from '../../../generated/prisma';
 import { Type } from 'class-transformer';
@@ -12,6 +13,7 @@ import { Type } from 'class-transformer';
 export class CreatePostDto {
   @IsString()
   @IsNotEmpty()
+  @MaxLength(280)
   content: string;
 
   @IsArray()

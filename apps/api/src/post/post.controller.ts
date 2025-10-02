@@ -4,6 +4,8 @@ import {
   Body,
   UseGuards,
   Req,
+  Get,
+  Query,
 } from '@nestjs/common';
 import { PostService } from './post.service';
 import { CreatePostDto } from './dto/create-post.dto';
@@ -23,5 +25,15 @@ export class PostController {
     const userId = req.user.id;
     const result = await this.postService.create(userId, createPostDto);
     return result;
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Get()
+  async getPostsByStatus(
+    @Req() req,
+    @Query('status') status: string
+  ): Promise<Post[]> {
+    const userId = req.user.id;
+    return this.postService.getPostsByStatus(userId, status);
   }
 }

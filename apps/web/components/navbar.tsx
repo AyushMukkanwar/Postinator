@@ -13,7 +13,6 @@ interface NavBarProps {
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard' },
-  { href: '/uploads', label: 'Uploads' },
   { href: '/schedule', label: 'Schedule Post' },
   { href: '/history', label: 'History' },
 ];

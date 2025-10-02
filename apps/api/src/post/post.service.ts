@@ -27,6 +27,12 @@ export class PostService {
     scheduledFor: Date;
     platform: Platform;
   }): Promise<Post> {
+    // Validate content length for Twitter
+    if (data.platform === Platform.TWITTER && data.content.length > 280) {
+      throw new BadRequestException(
+        'Post content exceeds the 280 character limit for Twitter.'
+      );
+    }
     // Validate social account belongs to user and is active
     const socialAccount = await this.socialAccountRepository.findById(
       data.socialAccountId
@@ -99,6 +105,14 @@ export class PostService {
 
     await this.cacheManager.set(cacheKey, posts);
     return posts;
+  }
+
+  async getPostsByStatus(userId: string, status: string): Promise<Post[]> {
+    const postStatus = status.toUpperCase() as PostStatus;
+    if (!Object.values(PostStatus).includes(postStatus)) {
+      throw new BadRequestException('Invalid status');
+    }
+    return this.postRepository.findByUserAndStatus(userId, postStatus);
   }
 
   async updatePostStatus(

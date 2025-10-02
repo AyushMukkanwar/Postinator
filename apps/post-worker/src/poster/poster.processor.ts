@@ -45,10 +45,6 @@ export class PosterProcessor extends WorkerHost implements OnModuleDestroy {
     try {
       let platformPostId: string;
 
-      this.logger.log(
-        `Processing post for platform: ${post.socialAccount.platform}`,
-      );
-
       if (post.socialAccount.platform === 'TWITTER') {
         const { accessToken, accessSecret } = post.socialAccount;
 
@@ -61,22 +57,12 @@ export class PosterProcessor extends WorkerHost implements OnModuleDestroy {
         const decryptedAccessSecret =
           this.encryptionService.decrypt(accessSecret);
 
-        this.logger.log(
-          `Decrypted Access Token (partial): ${decryptedAccessToken.substring(0, 5)}...`,
-        );
-        this.logger.log(
-          `Decrypted Access Secret (partial): ${decryptedAccessSecret.substring(0, 5)}...`,
-        );
-
         const { tweetId } = await this.twitterService.postTweet(
           decryptedAccessToken,
           decryptedAccessSecret,
           post.content,
         );
         platformPostId = tweetId;
-        this.logger.log(
-          `Twitter service response: ${JSON.stringify({ tweetId })}`,
-        );
       } else {
         // Simulate posting to other social media platforms
         this.logger.log(

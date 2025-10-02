@@ -28,8 +28,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { usePostStore } from '@/store/post-store';
 import { useUserStore } from '@/store/userStore';
 import { createPost } from '@/actions/post/create-post';
+import { isTokenExpired } from '@/lib/utils';
+import { updateSocialAccount } from '@/actions/social-account';
 
 interface PostFormData {
   content: string;
@@ -46,7 +49,8 @@ export function CreatePostForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const { user } = useUserStore();
+  const { user, addOrUpdateSocialAccount } = useUserStore();
+  const { addPost } = usePostStore();
   const [minDateTime, setMinDateTime] = useState('');
 
   useEffect(() => {
@@ -87,6 +91,20 @@ export function CreatePostForm() {
 
       if (!socialAccount) {
         setError('Invalid social account selected.');
+        setIsSubmitting(false);
+        return;
+      }
+      if (isTokenExpired(socialAccount.expiresAt)) {
+        setError(
+          'The token for this social account has expired. Please reactivate it.'
+        );
+        const result = await updateSocialAccount(socialAccount.id, {
+          isActive: false,
+        });
+        if (result) {
+          addOrUpdateSocialAccount(result);
+        }
+        setIsSubmitting(false);
         return;
       }
 
@@ -103,7 +121,8 @@ export function CreatePostForm() {
 
       if (result.error) {
         setError(result.error);
-      } else {
+      } else if (result.data) {
+        addPost(result.data);
         setSuccess('Post scheduled successfully!');
         setFormData({
           content: '',
@@ -170,7 +189,11 @@ export function CreatePostForm() {
               <span>
                 Write engaging content that resonates with your audience
               </span>
-              <span>{formData.content.length} characters</span>
+              <span
+                className={formData.content.length > 280 ? 'text-red-500' : ''}
+              >
+                {formData.content.length} characters
+              </span>
             </div>
           </div>
 
@@ -214,19 +237,24 @@ export function CreatePostForm() {
                 <SelectValue placeholder="Select a platform to publish to" />
               </SelectTrigger>
               <SelectContent>
-                {user?.socialAccounts?.map((account) => (
-                  <SelectItem key={account.id} value={account.id}>
-                    <div className="flex items-center space-x-2">
-                      {account.platform === 'LINKEDIN' && (
-                        <Linkedin className="h-4 w-4 text-blue-600" />
-                      )}
-                      {account.platform === 'TWITTER' && (
-                        <Twitter className="h-4 w-4 text-slate-700 dark:text-slate-300" />
-                      )}
-                      <span>{account.displayName || account.username}</span>
-                    </div>
-                  </SelectItem>
-                ))}
+                {user?.socialAccounts
+                  ?.filter(
+                    (account) =>
+                      account.isActive && !isTokenExpired(account.expiresAt)
+                  )
+                  .map((account) => (
+                    <SelectItem key={account.id} value={account.id}>
+                      <div className="flex items-center space-x-2">
+                        {account.platform === 'LINKEDIN' && (
+                          <Linkedin className="h-4 w-4 text-blue-600" />
+                        )}
+                        {account.platform === 'TWITTER' && (
+                          <Twitter className="h-4 w-4 text-slate-700 dark:text-slate-300" />
+                        )}
+                        <span>{account.username || account.displayName}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
             <p className="text-sm text-muted-foreground">

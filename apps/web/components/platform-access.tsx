@@ -54,7 +54,7 @@ export function PlatformAccess() {
               onCheckedChange={() => handleToggle(platform)}
               icon={getPlatformIcon(platform)}
               id={platform.toLowerCase()}
-              disabled={!account && expired}
+              disabled={platform !== 'TWITTER' || (!account && expired)}
             />
           );
         })}

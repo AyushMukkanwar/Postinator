@@ -60,10 +60,11 @@ export class SocialAccountService {
       accessSecret,
       refreshToken,
       expiresIn,
+      displayName,
       ...rest
     } = createSocialAccountDto;
 
-    const data: Prisma.SocialAccountUncheckedCreateInput = {
+    const data = {
       ...rest,
       platform,
       tokenType,
@@ -76,6 +77,7 @@ export class SocialAccountService {
         : null,
       expiresAt: expiresIn ? new Date(Date.now() + expiresIn * 1000) : null,
       userId,
+      displayName,
     };
 
     const socialAccount = await this.socialAccountRepository.upsert({
