@@ -3,6 +3,7 @@
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { exchangeTokenOnCallback } from '@/actions/auth';
+import { cookies } from 'next/headers';
 
 export async function signInWithEmailAndPassword(data: {
   // Corrected typo: signIn
@@ -52,6 +53,19 @@ export async function logout() {
   if (error) {
     console.error('Error logging out:', error);
     redirect('/error');
+  }
+
+  try {
+    const cookieStore = await cookies();
+    cookieStore.set('access_token', '', {
+      expires: new Date(0),
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/',
+    });
+  } catch (error) {
+    console.error('Error clearing custom JWT:', error);
   }
 
   redirect('/login');

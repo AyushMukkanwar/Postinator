@@ -3,13 +3,16 @@
 import { logout } from '@/app/(auth)/actions/index';
 import { Button } from '@/components/ui/button';
 import { useUserStore } from '@/store/userStore';
+import { usePostStore } from '@/store/postStore';
 
 export function LogoutButton() {
   const deleteUser = useUserStore((state) => state.deleteUser);
+  const setPosts = usePostStore((state) => state.setPosts);
 
   const handleLogout = async () => {
-    await logout();
     deleteUser();
+    setPosts([]);
+    await logout();
   };
 
   return (

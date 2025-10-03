@@ -5,11 +5,15 @@ import {
   authenticatedPut,
   authenticatedDelete,
   getCurrentUserId,
+  isAuthenticated,
 } from '@/lib/auth/auth-fetch';
 import { User } from '@/types/user';
 
 export const getUser = async (): Promise<User | null> => {
   try {
+    if (!(await isAuthenticated())) {
+      return null;
+    }
     const userId = await getCurrentUserId();
     const response = await authenticatedGet(`/users/${userId}/social-accounts`);
     if (!response.ok) {
