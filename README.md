@@ -1,4 +1,4 @@
-# 🚀 Uploader - Social Media Automation Tool
+# 🚀 Postinator - Social Media Automation Tool
 
 [![Build Status](https://img.shields.io/github/actions/workflow/status/your-repo/ci.yml?branch=main&style=for-the-badge)](https://github.com/your-repo/your-project/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
