@@ -38,9 +38,9 @@ export default function HomePage() {
               <span className="text-foreground">Automation</span>
             </h1>
             <p className="mt-6 text-lg sm:text-xl text-muted-foreground max-w-3xl mx-auto">
-              Automate your LinkedIn and X (Twitter) presence with intelligent
-              scheduling, content optimization, and analytics. Save hours every
-              week while growing your audience.
+              Automate your X (Twitter) presence with intelligent scheduling,
+              content optimization, and analytics. Save hours every week while
+              growing your audience.
             </p>
             <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
               <Button
@@ -62,9 +62,6 @@ export default function HomePage() {
                 <Link href="#features">Learn More</Link>
               </Button>
             </div>
-            <p className="mt-4 text-sm text-muted-foreground">
-              No credit card required • 14-day free trial
-            </p>
           </div>
         </div>
         {/* Decorative gradient orbs */}
