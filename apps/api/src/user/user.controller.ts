@@ -21,7 +21,7 @@ import {
   ApiQuery,
   ApiParam,
 } from '@nestjs/swagger';
-import { Prisma, User as UserModel } from '../../generated/prisma';
+import { Prisma, User as UserModel } from '@repo/database';
 import { UserService } from './user.service';
 import {
   CreateUserDto,
@@ -56,6 +56,17 @@ export class UserController {
   ): Promise<UserModel> {
     const supabaseId = user.supabaseId;
     return this.userService.createUser({ ...createUserDto, supabaseId });
+  }
+
+  @Get('me')
+  @ApiOperation({ summary: 'Get current user' })
+  @ApiResponse({
+    status: 200,
+    description: 'Current user retrieved successfully',
+    type: UserEntity,
+  })
+  async getMe(@User() user: UserModel): Promise<UserModel> {
+    return user;
   }
 
   @Get()

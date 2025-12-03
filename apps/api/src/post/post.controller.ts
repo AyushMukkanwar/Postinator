@@ -10,7 +10,7 @@ import {
 import { PostService } from './post.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { AuthGuard } from '@nestjs/passport';
-import { Post } from '../../generated/prisma';
+import { Post } from '@repo/database';
 
 @Controller('post')
 export class PostController {

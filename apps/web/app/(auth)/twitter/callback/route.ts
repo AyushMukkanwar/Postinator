@@ -30,7 +30,9 @@ export async function GET(req: NextRequest) {
     );
 
     if (!response.ok) {
-      throw new Error('Failed to get access token');
+      const body = await response.text();
+      console.error(`Backend failed with status ${response.status}: ${body}`);
+      throw new Error(`Failed to get access token: ${response.status} ${body}`);
     }
 
     const redirectUrl = new URL(
@@ -53,6 +55,7 @@ export async function GET(req: NextRequest) {
 
     return res;
   } catch (err) {
+    console.error('Twitter callback error:', err);
     return NextResponse.redirect(
       new URL('/login?error=callback_error', req.url)
     );

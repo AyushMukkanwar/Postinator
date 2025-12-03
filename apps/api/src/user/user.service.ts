@@ -1,7 +1,7 @@
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { UserRepository } from 'src/database/repositories/user.repository';
-import { User, Prisma } from '../../generated/prisma';
+import { User, Prisma } from '@repo/database';
 import { Cache } from 'cache-manager';
 
 @Injectable()
@@ -34,6 +34,10 @@ export class UserService {
 
   async getUserByEmail(email: string): Promise<User | null> {
     return this.userRepository.findByEmail(email);
+  }
+
+  async findBySupabaseId(supabaseId: string): Promise<User | null> {
+    return this.userRepository.findBySupabaseId(supabaseId);
   }
 
   async getUserByEmailOrThrow(email: string): Promise<User> {

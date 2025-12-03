@@ -2,7 +2,6 @@
 
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
-import { exchangeTokenOnCallback } from '@/actions/auth';
 import { cookies } from 'next/headers';
 
 export async function signInWithEmailAndPassword(data: {
@@ -36,14 +35,8 @@ export async function signUpWithEmailAndPassword(data: {
 }
 
 export async function handleAfterSignIn(accessToken: string) {
-  try {
-    const { token, user } = await exchangeTokenOnCallback(accessToken);
-
-    return { token, user };
-  } catch (error) {
-    console.error('5. Error during token exchange:', error);
-    throw new Error('Failed to sign in. Please try again.');
-  }
+  // Token exchange is no longer needed as we use Supabase session directly
+  return { token: accessToken };
 }
 
 export async function logout() {

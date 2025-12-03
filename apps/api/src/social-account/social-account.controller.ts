@@ -25,7 +25,7 @@ import {
   SocialAccount,
   Platform,
   TokenType,
-} from '../../generated/prisma';
+} from '@repo/database';
 import { User } from 'src/auth/decorators/user.decorator';
 import { TwitterService } from '../twitter/twitter.service';
 
@@ -148,9 +148,11 @@ export class SocialAccountController {
   })
   async getAccessToken(
     @Body()
-    { oauth_token, oauth_verifier, oauth_token_secret }: TwitterAccessTokenDto,
+    body: TwitterAccessTokenDto,
     @User() user: UserModel
   ) {
+    console.log('SocialAccountController.getAccessToken body:', body);
+    const { oauth_token, oauth_verifier, oauth_token_secret } = body;
     const {
       accessToken,
       accessTokenSecret,

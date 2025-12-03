@@ -1,16 +1,20 @@
 // (auth)/twitter/route.ts
 import { authenticatedGet } from '@/lib/auth/auth-fetch';
 import { serialize } from 'cookie';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const response = await authenticatedGet(
       '/social-account/twitter/request-token'
     );
 
     if (!response.ok) {
-      throw new Error('Failed to get request token');
+      const body = await response.text();
+      console.error(`Backend failed with status ${response.status}: ${body}`);
+      throw new Error(
+        `Failed to get request token: ${response.status} ${body}`
+      );
     }
 
     const { oauth_token, oauth_token_secret, oauth_callback_confirmed } =
@@ -37,6 +41,7 @@ export async function GET() {
 
     return res;
   } catch (error) {
-    return NextResponse.redirect(new URL('/login?error=true', '/'));
+    console.error('Twitter auth error:', error);
+    return NextResponse.redirect(new URL('/login?error=true', request.url));
   }
 }

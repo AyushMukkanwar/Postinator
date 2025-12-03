@@ -6,8 +6,8 @@
 
 generator client {
   provider      = "prisma-client-js"
-  output        = "../generated/prisma"
   binaryTargets = ["native", "debian-openssl-3.0.x"]
+  output        = "../src/generated/client"
 }
 
 datasource db {
@@ -28,6 +28,13 @@ model User {
   // Relations
   socialAccounts SocialAccount[]
   posts         Post[]
+  
+  role          Role     @default(USER)
+}
+
+enum Role {
+  USER
+  ADMIN
 }
 
 model SocialAccount {

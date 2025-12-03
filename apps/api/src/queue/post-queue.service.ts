@@ -35,12 +35,10 @@ export class PostQueueService {
     postId: string,
     newScheduledFor: Date
   ): Promise<void> {
-    // In BullMQ, you remove jobs by their ID from the queue.
-    // First, get all repeatable jobs, then find and remove the one with the matching key.
-    const repeatableJobs = await this.postQueue.getRepeatableJobs();
-    const jobToRemove = repeatableJobs.find((job) => job.id === postId);
-    if (jobToRemove) {
-      await this.postQueue.removeRepeatableByKey(jobToRemove.key);
+    // Remove the existing job by ID
+    const job = await this.postQueue.getJob(postId);
+    if (job) {
+      await job.remove();
       this.logger.log(`Removed old job for post ${postId} from queue.`);
     }
 
@@ -68,10 +66,9 @@ export class PostQueueService {
   }
 
   async removePostFromQueue(postId: string): Promise<void> {
-    const repeatableJobs = await this.postQueue.getRepeatableJobs();
-    const jobToRemove = repeatableJobs.find((job) => job.id === postId);
-    if (jobToRemove) {
-      await this.postQueue.removeRepeatableByKey(jobToRemove.key);
+    const job = await this.postQueue.getJob(postId);
+    if (job) {
+      await job.remove();
       this.logger.log(`Removed post ${postId} from queue.`);
     } else {
       this.logger.warn(

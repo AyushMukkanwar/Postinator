@@ -1,7 +1,7 @@
 // src/database/repositories/user.repository.ts
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { User, Prisma } from '../../../generated/prisma';
+import { User, Prisma } from '@repo/database';
 import { BaseRepository } from './base.repository';
 
 export interface IUserRepository
@@ -13,6 +13,7 @@ export interface IUserRepository
     Prisma.UserOrderByWithRelationInput
   > {
   findByEmail(email: string): Promise<User | null>;
+  findBySupabaseId(supabaseId: string): Promise<User | null>;
   findWithSocialAccounts(id: string): Promise<User | null>;
   findByEmailWithSocialAccounts(email: string): Promise<User | null>;
   findWithRecentPosts(id: string, limit?: number): Promise<User | null>;
@@ -34,6 +35,10 @@ export class UserRepository implements IUserRepository {
 
   async findByEmail(email: string): Promise<User | null> {
     return await this.prisma.user.findUnique({ where: { email } });
+  }
+
+  async findBySupabaseId(supabaseId: string): Promise<User | null> {
+    return await this.prisma.user.findUnique({ where: { supabaseId } });
   }
 
   async findWithSocialAccounts(id: string): Promise<User> {

@@ -31,11 +31,17 @@ export class TwitterService {
   }> {
     const callbackUrl = this.configService.get<string>('TWITTER_REDIRECT_URI');
     if (!callbackUrl) {
+      console.error('TwitterService: TWITTER_REDIRECT_URI is missing');
       throw new InternalServerErrorException(
         'Twitter callback URL not configured'
       );
     }
-    return this.client.generateAuthLink(callbackUrl);
+    try {
+      return await this.client.generateAuthLink(callbackUrl);
+    } catch (error) {
+      console.error('TwitterService: Failed to generate auth link:', error);
+      throw error;
+    }
   }
 
   getAuthorizeUrl(oauth_token: string): string {
@@ -54,6 +60,12 @@ export class TwitterService {
     name?: string;
     profileImageUrl?: string;
   }> {
+    console.log('TwitterService.getAccessToken inputs:', {
+      oauth_token,
+      oauth_verifier,
+      oauth_token_secret,
+    });
+
     const client = new TwitterApi({
       appKey: this.configService.get<string>('TWITTER_CLIENT_ID')!,
       appSecret: this.configService.get<string>('TWITTER_CLIENT_SECRET')!,
@@ -61,23 +73,28 @@ export class TwitterService {
       accessSecret: oauth_token_secret,
     });
 
-    const {
-      accessToken,
-      accessSecret,
-      client: loggedClient,
-    } = await client.login(oauth_verifier);
+    try {
+      const {
+        accessToken,
+        accessSecret,
+        client: loggedClient,
+      } = await client.login(oauth_verifier);
 
-    const {
-      data: { id, username, name, profile_image_url },
-    } = await loggedClient.v2.me({ 'user.fields': ['profile_image_url'] });
+      const {
+        data: { id, username, name, profile_image_url },
+      } = await loggedClient.v2.me({ 'user.fields': ['profile_image_url'] });
 
-    return {
-      accessToken,
-      accessTokenSecret: accessSecret,
-      userId: id,
-      username,
-      name,
-      profileImageUrl: profile_image_url,
-    };
+      return {
+        accessToken,
+        accessTokenSecret: accessSecret,
+        userId: id,
+        username,
+        name,
+        profileImageUrl: profile_image_url,
+      };
+    } catch (error) {
+      console.error('TwitterService: Failed to get access token:', error);
+      throw error;
+    }
   }
 }

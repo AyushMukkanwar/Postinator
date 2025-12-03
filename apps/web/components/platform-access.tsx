@@ -29,7 +29,7 @@ export function PlatformAccess() {
     } else {
       // Initiate OAuth flow
       if (platform === 'TWITTER') {
-        window.location.href = `${process.env.NEXT_PUBLIC_CLIENT_BACKEND_API_URL}/auth/twitter`;
+        window.location.href = `/twitter`;
       }
     }
   };

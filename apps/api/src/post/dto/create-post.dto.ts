@@ -7,7 +7,7 @@ import {
   IsEnum,
   MaxLength,
 } from 'class-validator';
-import { Platform } from '../../../generated/prisma';
+import { Platform } from '@repo/database';
 import { Type } from 'class-transformer';
 
 export class CreatePostDto {

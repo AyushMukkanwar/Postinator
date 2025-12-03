@@ -8,13 +8,12 @@ import { SupabaseStrategy } from './strategies/supabase.strategy';
 import { UserModule } from 'src/user/user.module';
 import { ResourceOwnerGuard } from './guards/resource-owner.guard';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { AuthController } from './auth.controller';
-import { AuthService } from './auth.service';
 import { UserService } from 'src/user/user.service';
 import { DatabaseModule } from 'src/database/database.module';
 import { AppCacheModule } from 'src/cache/cache.module';
 import { SocialAccountModule } from 'src/social-account/social-account.module';
 import { TwitterModule } from 'src/twitter/twitter.module';
+import { RolesGuard } from './guards/roles.guard';
 
 @Module({
   imports: [
@@ -25,16 +24,6 @@ import { TwitterModule } from 'src/twitter/twitter.module';
     AppCacheModule,
     SocialAccountModule,
     TwitterModule,
-    JwtModule.registerAsync({
-      imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => {
-        return {
-          secret: configService.get<string>('SUPABASE_JWT_SECRET'),
-          signOptions: { expiresIn: '40000s' },
-        };
-      },
-      inject: [ConfigService],
-    }),
   ],
   providers: [
     {
@@ -63,11 +52,11 @@ import { TwitterModule } from 'src/twitter/twitter.module';
     SupabaseStrategy,
     JwtAuthGuard,
     ResourceOwnerGuard,
+    RolesGuard,
     PrismaService,
-    AuthService,
     UserService,
   ],
-  exports: [JwtAuthGuard, JwtModule, ResourceOwnerGuard],
-  controllers: [AuthController],
+  exports: [JwtAuthGuard, ResourceOwnerGuard, RolesGuard],
+  controllers: [],
 })
 export class AuthModule {}
