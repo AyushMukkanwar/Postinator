@@ -6,26 +6,37 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const oauth_token = searchParams.get('oauth_token');
-    const oauth_verifier = searchParams.get('oauth_verifier');
+    const code = searchParams.get('code');
+    const state = searchParams.get('state');
+    const error = searchParams.get('error');
 
-    if (!oauth_token || !oauth_verifier) {
-      throw new Error('Missing oauth_token or oauth_verifier');
+    if (error) {
+      throw new Error(`Twitter auth error: ${error}`);
+    }
+
+    if (!code || !state) {
+      throw new Error('Missing code or state');
     }
 
     const cookies = parse(req.headers.get('cookie') || '');
-    const oauth_token_secret = cookies['twitter_oauth_token_secret'];
+    const codeVerifier = cookies['twitter_code_verifier'];
+    const storedState = cookies['twitter_state'];
 
-    if (!oauth_token_secret) {
-      throw new Error('Missing oauth_token_secret from cookie');
+    if (!codeVerifier || !storedState) {
+      throw new Error('Missing code_verifier or state from cookie');
+    }
+
+    if (state !== storedState) {
+      throw new Error('State mismatch');
     }
 
     const response = await authenticatedPost(
       '/social-account/twitter/access-token',
       {
-        oauth_token,
-        oauth_verifier,
-        oauth_token_secret,
+        code,
+        state,
+        codeVerifier,
+        redirectUri: `${process.env.NEXT_PUBLIC_FRONTEND_URL}/twitter/callback`,
       }
     );
 
@@ -42,9 +53,20 @@ export async function GET(req: NextRequest) {
 
     const res = NextResponse.redirect(redirectUrl);
 
-    res.headers.set(
+    // Clear cookies
+    res.headers.append(
       'Set-Cookie',
-      serialize('twitter_oauth_token_secret', '', {
+      serialize('twitter_code_verifier', '', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 0,
+        path: '/',
+      })
+    );
+    res.headers.append(
+      'Set-Cookie',
+      serialize('twitter_state', '', {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',

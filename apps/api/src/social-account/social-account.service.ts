@@ -60,6 +60,7 @@ export class SocialAccountService {
       accessSecret,
       refreshToken,
       expiresIn,
+      expiresAt,
       displayName,
       ...rest
     } = createSocialAccountDto;
@@ -75,7 +76,11 @@ export class SocialAccountService {
       refreshToken: refreshToken
         ? this.encryptionService.encrypt(refreshToken)
         : null,
-      expiresAt: expiresIn ? new Date(Date.now() + expiresIn * 1000) : null,
+      expiresAt: expiresAt
+        ? expiresAt
+        : expiresIn
+          ? new Date(Date.now() + expiresIn * 1000)
+          : null,
       userId,
       displayName,
     };

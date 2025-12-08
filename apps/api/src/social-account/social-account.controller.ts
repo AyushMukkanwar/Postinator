@@ -128,13 +128,13 @@ export class SocialAccountController {
   }
 
   @Get('twitter/request-token')
-  @ApiOperation({ summary: 'Get Twitter request token' })
+  @ApiOperation({ summary: 'Get Twitter OAuth 2.0 authorization URL' })
   @ApiResponse({
     status: 200,
-    description: 'Twitter request token retrieved successfully',
+    description: 'Twitter authorization URL retrieved successfully',
   })
   async getRequestToken() {
-    return this.twitterService.getRequestToken();
+    return this.twitterService.getAuthorizationUrl();
   }
 
   @Post('twitter/access-token')
@@ -152,30 +152,30 @@ export class SocialAccountController {
     @User() user: UserModel
   ) {
     console.log('SocialAccountController.getAccessToken body:', body);
-    const { oauth_token, oauth_verifier, oauth_token_secret } = body;
+    const { code, state, codeVerifier, redirectUri } = body;
     const {
       accessToken,
-      accessTokenSecret,
+      refreshToken,
+      expiresIn,
       userId,
       username,
       name,
       profileImageUrl,
-    } = await this.twitterService.getAccessToken(
-      oauth_token,
-      oauth_verifier,
-      oauth_token_secret
-    );
+    } = await this.twitterService.login(code, codeVerifier, redirectUri);
+
+    const expiresAt = new Date(Date.now() + expiresIn * 1000);
 
     const socialAccount = await this.socialAccountService.upsert(
       {
         platform: 'TWITTER',
         accessToken: accessToken,
-        accessSecret: accessTokenSecret,
+        refreshToken: refreshToken,
+        expiresAt: expiresAt,
         platformId: userId,
         displayName: name,
         username,
         avatar: profileImageUrl,
-        tokenType: TokenType.OAUTH1,
+        tokenType: TokenType.OAUTH2,
       },
       user.id
     );

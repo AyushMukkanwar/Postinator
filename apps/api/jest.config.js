@@ -2,7 +2,7 @@ module.exports = {
   displayName: 'api',
   preset: 'ts-jest',
   testEnvironment: 'node',
-  setupFilesAfterEnv: ['<rootDir>/src/test/setup.ts'],
+
   testMatch: [
     '<rootDir>/src/**/__tests__/**/*.(test|spec).ts',
     '<rootDir>/src/**/*.(test|spec).ts',
@@ -22,6 +22,7 @@ module.exports = {
   },
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
+    '^src/(.*)$': '<rootDir>/src/$1',
     '^@repo/db/prisma/generated/prisma$':
       '<rootDir>/../../packages/db/prisma/generated/prisma',
   },

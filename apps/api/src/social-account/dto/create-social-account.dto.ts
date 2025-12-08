@@ -85,6 +85,14 @@ export class CreateSocialAccountDto {
   refreshToken?: string;
 
   @ApiProperty({
+    description: 'Token expiration date (for OAuth2)',
+    required: false,
+    example: '2024-06-01T00:00:00.000Z',
+  })
+  @IsOptional()
+  expiresAt?: Date;
+
+  @ApiProperty({
     description: 'Token expiration in seconds from now (for OAuth2)',
     required: false,
     example: 3600,

@@ -19,16 +19,16 @@ export class TwitterService {
     }
 
     this.client = new TwitterApi({
-      appKey: apiKey,
-      appSecret: apiSecret,
+      clientId: apiKey,
+      clientSecret: apiSecret,
     });
   }
 
-  async getRequestToken(): Promise<{
-    oauth_token: string;
-    oauth_token_secret: string;
-    oauth_callback_confirmed: string;
-  }> {
+  getAuthorizationUrl(): {
+    url: string;
+    codeVerifier: string;
+    state: string;
+  } {
     const callbackUrl = this.configService.get<string>('TWITTER_REDIRECT_URI');
     if (!callbackUrl) {
       console.error('TwitterService: TWITTER_REDIRECT_URI is missing');
@@ -36,49 +36,41 @@ export class TwitterService {
         'Twitter callback URL not configured'
       );
     }
-    try {
-      return await this.client.generateAuthLink(callbackUrl);
-    } catch (error) {
-      console.error('TwitterService: Failed to generate auth link:', error);
-      throw error;
-    }
+
+    const { url, codeVerifier, state } = this.client.generateOAuth2AuthLink(
+      callbackUrl,
+      {
+        scope: ['tweet.read', 'tweet.write', 'users.read', 'offline.access'],
+      }
+    );
+
+    return { url, codeVerifier, state };
   }
 
-  getAuthorizeUrl(oauth_token: string): string {
-    return `https://api.twitter.com/oauth/authorize?oauth_token=${oauth_token}`;
-  }
-
-  async getAccessToken(
-    oauth_token: string,
-    oauth_verifier: string,
-    oauth_token_secret: string
+  async login(
+    code: string,
+    codeVerifier: string,
+    redirectUri: string
   ): Promise<{
     accessToken: string;
-    accessTokenSecret: string;
+    refreshToken?: string;
+    expiresIn: number;
     userId: string;
     username: string;
     name?: string;
     profileImageUrl?: string;
   }> {
-    console.log('TwitterService.getAccessToken inputs:', {
-      oauth_token,
-      oauth_verifier,
-      oauth_token_secret,
-    });
-
-    const client = new TwitterApi({
-      appKey: this.configService.get<string>('TWITTER_CLIENT_ID')!,
-      appSecret: this.configService.get<string>('TWITTER_CLIENT_SECRET')!,
-      accessToken: oauth_token,
-      accessSecret: oauth_token_secret,
-    });
-
     try {
       const {
-        accessToken,
-        accessSecret,
         client: loggedClient,
-      } = await client.login(oauth_verifier);
+        accessToken,
+        refreshToken,
+        expiresIn,
+      } = await this.client.loginWithOAuth2({
+        code,
+        codeVerifier,
+        redirectUri,
+      });
 
       const {
         data: { id, username, name, profile_image_url },
@@ -86,14 +78,38 @@ export class TwitterService {
 
       return {
         accessToken,
-        accessTokenSecret: accessSecret,
+        refreshToken,
+        expiresIn,
         userId: id,
         username,
         name,
         profileImageUrl: profile_image_url,
       };
     } catch (error) {
-      console.error('TwitterService: Failed to get access token:', error);
+      console.error('TwitterService: Failed to login with OAuth 2.0:', error);
+      throw error;
+    }
+  }
+
+  async refreshAccessToken(refreshToken: string): Promise<{
+    accessToken: string;
+    refreshToken?: string;
+    expiresIn: number;
+  }> {
+    try {
+      const {
+        accessToken,
+        refreshToken: newRefreshToken,
+        expiresIn,
+      } = await this.client.refreshOAuth2Token(refreshToken);
+
+      return {
+        accessToken,
+        refreshToken: newRefreshToken,
+        expiresIn,
+      };
+    } catch (error) {
+      console.error('TwitterService: Failed to refresh token:', error);
       throw error;
     }
   }

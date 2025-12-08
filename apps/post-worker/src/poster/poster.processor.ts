@@ -46,21 +46,39 @@ export class PosterProcessor extends WorkerHost implements OnModuleDestroy {
       let platformPostId: string;
 
       if (post.socialAccount.platform === 'TWITTER') {
-        const { accessToken, accessSecret } = post.socialAccount;
+        const { accessToken, refreshToken, expiresAt } = post.socialAccount;
 
-        if (!accessToken || !accessSecret) {
-          throw new Error('Twitter access token or secret is missing.');
+        if (!accessToken) {
+          throw new Error('Twitter access token is missing.');
         }
 
         const decryptedAccessToken =
           this.encryptionService.decrypt(accessToken);
-        const decryptedAccessSecret =
-          this.encryptionService.decrypt(accessSecret);
+
+        const decryptedRefreshToken = refreshToken
+          ? this.encryptionService.decrypt(refreshToken)
+          : undefined;
 
         const { tweetId } = await this.twitterService.postTweet(
           decryptedAccessToken,
-          decryptedAccessSecret,
+          decryptedRefreshToken,
+          expiresAt,
           post.content,
+          async (newAccessToken, newRefreshToken, newExpiresAt) => {
+            const encryptedAccessToken =
+              this.encryptionService.encrypt(newAccessToken);
+            const encryptedRefreshToken =
+              this.encryptionService.encrypt(newRefreshToken);
+
+            await this.prisma.socialAccount.update({
+              where: { id: post.socialAccountId },
+              data: {
+                accessToken: encryptedAccessToken,
+                refreshToken: encryptedRefreshToken,
+                expiresAt: newExpiresAt,
+              },
+            });
+          },
         );
         platformPostId = tweetId;
       } else {

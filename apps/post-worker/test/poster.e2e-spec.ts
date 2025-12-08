@@ -2,20 +2,21 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import { AppModule } from '../src/app.module';
 import { TestContainers } from './testcontainers-setup';
-import {
-  PrismaClient,
-  PostStatus,
-  Platform,
-} from '@repo/db/prisma/generated/prisma';
+import { PrismaClient, PostStatus, Platform, TokenType } from '@repo/database';
 import { getQueueToken } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { ConfigService } from '@nestjs/config';
+import { TwitterService } from '../src/poster/twitter.service';
 
 describe('Post-worker (e2e)', () => {
   let app: INestApplication;
   const containers = new TestContainers();
   let prisma: PrismaClient;
   let postQueue: Queue;
+
+  const mockTwitterService = {
+    postTweet: jest.fn().mockResolvedValue({ tweetId: 'mock-tweet-id' }),
+  };
 
   beforeAll(async () => {
     const { dbUri, redisUrl } = await containers.start();
@@ -33,9 +34,14 @@ describe('Post-worker (e2e)', () => {
           if (key === 'REDIS_PORT') {
             return Number(new URL(redisUrl).port);
           }
+          if (key === 'ENCRYPTION_KEY') {
+            return 'test-encryption-key-32-chars-long!!';
+          }
           return null;
         },
       })
+      .overrideProvider(TwitterService)
+      .useValue(mockTwitterService)
       .compile();
 
     app = moduleFixture.createNestApplication();
@@ -54,6 +60,7 @@ describe('Post-worker (e2e)', () => {
     await prisma.post.deleteMany({});
     await prisma.socialAccount.deleteMany({});
     await prisma.user.deleteMany({});
+    mockTwitterService.postTweet.mockClear();
   });
 
   it('should process a scheduled post from the queue', async () => {
@@ -71,7 +78,10 @@ describe('Post-worker (e2e)', () => {
         platform: Platform.TWITTER,
         platformId: 'test-platform-id',
         username: 'test-username',
-        accessToken: 'test-access-token',
+        accessToken: 'encrypted-access-token',
+        refreshToken: 'encrypted-refresh-token',
+        expiresAt: new Date(Date.now() + 3600 * 1000),
+        tokenType: TokenType.OAUTH2,
         userId: user.id,
         isActive: true,
       },
@@ -104,7 +114,8 @@ describe('Post-worker (e2e)', () => {
       where: { id: post.id },
     });
     expect(updatedPost?.status).toBe(PostStatus.PUBLISHED);
-    expect(updatedPost?.platformPostId).toBeDefined();
+    expect(updatedPost?.platformPostId).toBe('mock-tweet-id');
+    expect(mockTwitterService.postTweet).toHaveBeenCalled();
   }, 10000);
 
   it('should mark a post as FAILED if processing fails', async () => {
@@ -122,6 +133,7 @@ describe('Post-worker (e2e)', () => {
         platformId: 'test-platform-id',
         username: 'test-username',
         accessToken: 'test-access-token',
+        tokenType: TokenType.OAUTH2,
         userId: user.id,
         isActive: true,
       },
@@ -168,6 +180,7 @@ describe('Post-worker (e2e)', () => {
         platformId: 'test-platform-id',
         username: 'test-username',
         accessToken: 'test-access-token',
+        tokenType: TokenType.OAUTH2,
         userId: user.id,
         isActive: true,
       },

@@ -17,20 +17,28 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const { oauth_token, oauth_token_secret, oauth_callback_confirmed } =
-      await response.json();
+    const { url, codeVerifier, state } = await response.json();
 
-    if (!oauth_callback_confirmed) {
-      throw new Error('OAuth callback not confirmed');
+    if (!url || !codeVerifier || !state) {
+      throw new Error('Missing url, codeVerifier, or state from backend');
     }
 
-    const authUrl = `https://api.twitter.com/oauth/authorize?oauth_token=${oauth_token}`;
+    const res = NextResponse.redirect(url);
 
-    const res = NextResponse.redirect(authUrl);
-
-    res.headers.set(
+    res.headers.append(
       'Set-Cookie',
-      serialize('twitter_oauth_token_secret', oauth_token_secret, {
+      serialize('twitter_code_verifier', codeVerifier, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 10, // 10 minutes
+        path: '/',
+      })
+    );
+
+    res.headers.append(
+      'Set-Cookie',
+      serialize('twitter_state', state, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',

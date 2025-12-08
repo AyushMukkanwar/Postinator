@@ -5,15 +5,20 @@ export class TwitterAccessTokenDto {
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
-  oauth_token: string;
+  code: string;
 
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
-  oauth_verifier: string;
+  state: string;
 
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
-  oauth_token_secret: string;
+  codeVerifier: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  redirectUri: string;
 }
