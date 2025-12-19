@@ -51,6 +51,7 @@ model SocialAccount {
   accessSecret  String?   // Stores OAUTH1 oauth_token_secret
   refreshToken  String?   // Stores OAUTH2 refresh_token
   expiresAt     DateTime? // Stores OAUTH2 token expiry time
+  refreshTokenExpiresAt DateTime?
 
   isActive      Boolean   @default(true)
   createdAt     DateTime  @default(now())

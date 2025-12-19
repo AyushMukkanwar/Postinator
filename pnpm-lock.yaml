@@ -391,6 +391,9 @@ importers:
       '@next/eslint-plugin-next':
         specifier: ^15.3.0
         version: 15.5.3
+      '@repo/database':
+        specifier: workspace:*
+        version: link:../../packages/database
       '@repo/typescript-config':
         specifier: workspace:*
         version: link:../../packages/typescript-config

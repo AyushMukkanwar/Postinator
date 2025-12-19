@@ -1,33 +1,30 @@
 import {
-  Controller,
-  Get,
-  Post,
   Body,
-  Patch,
-  Param,
+  Controller,
   Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
   UseGuards,
 } from '@nestjs/common';
+import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { SocialAccount, TokenType, User as UserModel } from '@repo/database';
+import { ResourceParamName } from 'src/auth/decorators/resource-param.decorator';
+import { User } from 'src/auth/decorators/user.decorator';
+import { JwtAuthGuard } from 'src/auth/guards/jwt.auth.guard';
+import { ResourceOwnerGuard } from 'src/auth/guards/resource-owner.guard';
+import { LinkedinService } from 'src/linkedin/linkedin.service';
+import { TwitterService } from '../twitter/twitter.service';
+import { CreateSocialAccountDto } from './dto/create-social-account.dto';
+import { LinkedInAccessTokenDto } from './dto/linkedin-access-token.dto';
+import { TwitterAccessTokenDto } from './dto/twitter-access-token.dto';
+import { UpdateSocialAccountDto } from './dto/update-social-account.dto';
+import { SocialAccountEntity } from './entities/social-account.entity';
 import {
   SocialAccountService,
   StrippedSocialAccount,
 } from './social-account.service';
-import { CreateSocialAccountDto } from './dto/create-social-account.dto';
-import { TwitterAccessTokenDto } from './dto/twitter-access-token.dto';
-import { UpdateSocialAccountDto } from './dto/update-social-account.dto';
-import { JwtAuthGuard } from 'src/auth/guards/jwt.auth.guard';
-import { ResourceOwnerGuard } from 'src/auth/guards/resource-owner.guard';
-import { ResourceParamName } from 'src/auth/decorators/resource-param.decorator';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
-import { SocialAccountEntity } from './entities/social-account.entity';
-import {
-  User as UserModel,
-  SocialAccount,
-  Platform,
-  TokenType,
-} from '@repo/database';
-import { User } from 'src/auth/decorators/user.decorator';
-import { TwitterService } from '../twitter/twitter.service';
 
 @ApiTags('social-account')
 @UseGuards(JwtAuthGuard)
@@ -35,7 +32,8 @@ import { TwitterService } from '../twitter/twitter.service';
 export class SocialAccountController {
   constructor(
     private readonly socialAccountService: SocialAccountService,
-    private readonly twitterService: TwitterService
+    private readonly twitterService: TwitterService,
+    private readonly linkedinService: LinkedinService
   ) {}
 
   @Post('upsert')
@@ -152,7 +150,7 @@ export class SocialAccountController {
     @User() user: UserModel
   ) {
     console.log('SocialAccountController.getAccessToken body:', body);
-    const { code, state, codeVerifier, redirectUri } = body;
+    const { code, codeVerifier, redirectUri } = body;
     const {
       accessToken,
       refreshToken,
@@ -176,10 +174,67 @@ export class SocialAccountController {
         username,
         avatar: profileImageUrl,
         tokenType: TokenType.OAUTH2,
+        isActive: true,
       },
       user.id
     );
 
     return socialAccount;
+  }
+
+  @Get('linkedin/auth-url')
+  @ApiOperation({ summary: 'Get LinkedIn OAuth 2.0 authorization URL' })
+  @ApiResponse({
+    status: 200,
+    description: 'LinkedIn authorization URL retrieved successfully',
+  })
+  getLinkedInAuthUrl() {
+    return this.linkedinService.getAuthorizationUrl();
+  }
+
+  @Post('linkedin/access-token')
+  @ApiOperation({
+    summary: 'Get LinkedIn access token and create social account',
+  })
+  @ApiResponse({
+    status: 200,
+    description:
+      'LinkedIn access token retrieved and social account created successfully',
+  })
+  async getLinkedInAccessToken(
+    @Body() body: LinkedInAccessTokenDto,
+    @User() user: UserModel
+  ) {
+    try {
+      const { code, redirectUri } = body;
+      const { accessToken, expiresIn, platformId, name, picture } =
+        await this.linkedinService.login(code, redirectUri);
+
+      // LinkedIn tokens last 60 days
+      const expiresAt = new Date(Date.now() + expiresIn * 1000);
+      const refreshTokenExpiresAt = expiresAt;
+
+      const socialAccount = await this.socialAccountService.upsert(
+        {
+          platform: 'LINKEDIN',
+          accessToken: accessToken,
+          refreshToken: undefined,
+          expiresAt: expiresAt,
+          refreshTokenExpiresAt: refreshTokenExpiresAt,
+          platformId: platformId,
+          displayName: name,
+          username: name,
+          avatar: picture,
+          tokenType: TokenType.OAUTH2,
+          isActive: true,
+        },
+        user.id
+      );
+
+      return socialAccount;
+    } catch (error) {
+      console.error('LinkedIn Access Token Error:', error);
+      throw error;
+    }
   }
 }

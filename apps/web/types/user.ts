@@ -1,4 +1,4 @@
-import type { SocialAccount } from './socialAccount';
+import type { SocialAccount } from '@repo/database';
 import type { Post } from './postStatus';
 
 export interface User {

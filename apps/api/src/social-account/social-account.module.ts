@@ -1,10 +1,11 @@
 import { Module, forwardRef } from '@nestjs/common';
-import { SocialAccountService } from './social-account.service';
-import { SocialAccountController } from './social-account.controller';
-import { DatabaseModule } from '../database/database.module';
-import { UserModule } from 'src/user/user.module';
 import { EncryptionModule } from 'src/encryption/encryption.module';
+import { UserModule } from 'src/user/user.module';
+import { DatabaseModule } from '../database/database.module';
+import { LinkedinService } from '../linkedin/linkedin.service';
 import { TwitterModule } from '../twitter/twitter.module';
+import { SocialAccountController } from './social-account.controller';
+import { SocialAccountService } from './social-account.service';
 
 @Module({
   imports: [
@@ -14,7 +15,7 @@ import { TwitterModule } from '../twitter/twitter.module';
     TwitterModule,
   ],
   controllers: [SocialAccountController],
-  providers: [SocialAccountService],
+  providers: [SocialAccountService, LinkedinService],
   exports: [SocialAccountService],
 })
 export class SocialAccountModule {}

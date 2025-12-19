@@ -1,9 +1,9 @@
 import { updateSocialAccount } from '@/actions/social-account';
 import { useUserStore } from '@/store/userStore';
-import { getPlatformDisplayName, Platforms } from '@/types/socialAccount';
+import { getPlatformDisplayName, Platforms } from '@repo/database';
 
-import { getPlatformIcon } from './platform-icon';
 import { BaseToggle } from './base-toggle';
+import { getPlatformIcon } from './platform-icon';
 import { Label } from './ui/label';
 
 export function PlatformAccess() {
@@ -12,7 +12,7 @@ export function PlatformAccess() {
 
   if (!user) return null;
 
-  const isTokenExpired = (expiresAt: string | null | undefined) => {
+  const isTokenExpired = (expiresAt: Date | string | null | undefined) => {
     if (!expiresAt) return false;
     return new Date(expiresAt) < new Date();
   };
@@ -30,6 +30,8 @@ export function PlatformAccess() {
       // Initiate OAuth flow
       if (platform === 'TWITTER') {
         window.location.href = `/twitter`;
+      } else if (platform === 'LINKEDIN') {
+        window.location.href = `/linkedin`;
       }
     }
   };
@@ -43,6 +45,9 @@ export function PlatformAccess() {
             (acc) => acc.platform === platform
           );
           const expired = isTokenExpired(account?.expiresAt);
+          // Only enable Twitter and LinkedIn for now
+          const isSupported = platform === 'TWITTER' || platform === 'LINKEDIN';
+
           return (
             <BaseToggle
               key={platform}
@@ -51,7 +56,7 @@ export function PlatformAccess() {
               onCheckedChange={() => handleToggle(platform)}
               icon={getPlatformIcon(platform)}
               id={platform.toLowerCase()}
-              disabled={platform !== 'TWITTER' || (!account && expired)}
+              disabled={!isSupported}
             />
           );
         })}

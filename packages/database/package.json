@@ -5,7 +5,7 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
-    "build": "prisma generate && tsc && cp -r src/generated dist/generated",
+    "build": "prisma generate && tsc && rm -rf dist/generated && cp -r src/generated dist/generated",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "dev": "prisma generate && tsc --watch"

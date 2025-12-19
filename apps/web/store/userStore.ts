@@ -2,7 +2,7 @@
 
 import { create } from 'zustand';
 import type { User } from '@/types/user';
-import { SocialAccount } from '@/types/socialAccount';
+import { SocialAccount } from '@repo/database';
 
 type UserState = {
   user: User | null;

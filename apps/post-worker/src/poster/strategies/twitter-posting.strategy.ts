@@ -1,26 +1,27 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { EUploadMimeType, TwitterApi } from 'twitter-api-v2';
+import { SocialAccount } from '@repo/database';
+import { TwitterApi } from 'twitter-api-v2';
+import { IPostingStrategy } from '../interfaces/posting-strategy.interface';
 
-@Injectable()
-export class TwitterService {
-  private readonly logger = new Logger(TwitterService.name);
+export class TwitterPostingStrategy implements IPostingStrategy {
+  private readonly logger = new Logger(TwitterPostingStrategy.name);
 
   constructor(private readonly configService: ConfigService) {}
 
-  async postTweet(
-    accessToken: string,
-    refreshToken: string | null | undefined,
-    expiresAt: Date | null | undefined,
-    text: string,
-    updateTokens: (
-      newAccessToken: string,
-      newRefreshToken: string,
-      newExpiresAt: Date,
+  async post(
+    account: SocialAccount,
+    content: string,
+    mediaUrls: string[],
+    updateTokensCallback: (
+      accessToken: string,
+      refreshToken: string,
+      expiresAt: Date,
     ) => Promise<void>,
-  ): Promise<{
-    tweetId: string;
-  }> {
+  ): Promise<{ postId: string }> {
+    // TODO: implement the method
+    const { accessToken, refreshToken, expiresAt } = account;
+
     const clientId = this.configService.get<string>('TWITTER_CLIENT_ID');
     const clientSecret = this.configService.get<string>(
       'TWITTER_CLIENT_SECRET',
@@ -54,7 +55,7 @@ export class TwitterService {
 
         const newExpiresAt = new Date(Date.now() + expiresIn * 1000);
 
-        await updateTokens(
+        await updateTokensCallback(
           newAccessToken,
           newRefreshToken || refreshToken,
           newExpiresAt,
@@ -70,22 +71,7 @@ export class TwitterService {
     const client = new TwitterApi(currentAccessToken);
 
     try {
-      const imageUrl =
-        'https://static.vecteezy.com/system/resources/previews/054/418/601/non_2x/majestic-white-horse-and-strong-black-horse-galloping-through-the-green-grassy-field-at-dusk-free-photo.jpeg';
-      const imgResponse = await fetch(imageUrl);
-      const imgBuffer = await imgResponse.arrayBuffer();
-      const imageType = imgResponse.headers.get('content-type');
-
-      // const mediaId = await client.v1.uploadMedia(Buffer.from(imgBuffer), { mimeType: imageType || 'image/png' });
-
-      const mediaId = await client.v2.uploadMedia(Buffer.from(imgBuffer), {
-        media_type: (imageType || 'image/jpeg') as EUploadMimeType,
-      });
-
-      const { data: tweetData, errors } = await client.v2.tweet({
-        text,
-        media: { media_ids: [mediaId] },
-      });
+      const { data: tweetData, errors } = await client.v2.tweet(content);
 
       if (errors) {
         const errorMessage = `Failed to post tweet: ${JSON.stringify(errors)}`;
@@ -93,7 +79,7 @@ export class TwitterService {
         throw new Error(errorMessage);
       }
 
-      return { tweetId: tweetData.id };
+      return { postId: tweetData.id };
     } catch (error) {
       // If 401 Unauthorized, try to refresh token and retry once
       if (
@@ -116,14 +102,15 @@ export class TwitterService {
 
           const newExpiresAt = new Date(Date.now() + expiresIn * 1000);
 
-          await updateTokens(
+          await updateTokensCallback(
             newAccessToken,
             newRefreshToken || refreshToken,
             newExpiresAt,
           );
 
           const retryClient = new TwitterApi(newAccessToken);
-          const { data: tweetData, errors } = await retryClient.v2.tweet(text);
+          const { data: tweetData, errors } =
+            await retryClient.v2.tweet(content);
 
           if (errors) {
             const errorMessage = `Failed to post tweet after retry: ${JSON.stringify(
@@ -133,7 +120,7 @@ export class TwitterService {
             throw new Error(errorMessage);
           }
 
-          return { tweetId: tweetData.id };
+          return { postId: tweetData.id };
         } catch (retryError) {
           this.logger.error(
             'Failed to refresh token or retry post:',

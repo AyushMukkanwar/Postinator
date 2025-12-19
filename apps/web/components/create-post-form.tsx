@@ -94,19 +94,6 @@ export function CreatePostForm() {
         setIsSubmitting(false);
         return;
       }
-      if (isTokenExpired(socialAccount.expiresAt)) {
-        setError(
-          'The token for this social account has expired. Please reactivate it.'
-        );
-        const result = await updateSocialAccount(socialAccount.id, {
-          isActive: false,
-        });
-        if (result) {
-          addOrUpdateSocialAccount(result);
-        }
-        setIsSubmitting(false);
-        return;
-      }
 
       const postData = {
         content: formData.content,
@@ -236,10 +223,7 @@ export function CreatePostForm() {
               </SelectTrigger>
               <SelectContent>
                 {user?.socialAccounts
-                  ?.filter(
-                    (account) =>
-                      account.isActive && !isTokenExpired(account.expiresAt)
-                  )
+                  ?.filter((account) => account.isActive)
                   .map((account) => (
                     <SelectItem key={account.id} value={account.id}>
                       <div className="flex items-center space-x-2">

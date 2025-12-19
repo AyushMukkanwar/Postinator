@@ -1,7 +1,7 @@
 'use server';
 
 import { authenticatedPost } from '@/lib/auth/auth-fetch';
-import { Platform } from '@/types/socialAccount';
+import { Platform } from '@repo/database';
 
 interface PostData {
   content: string;

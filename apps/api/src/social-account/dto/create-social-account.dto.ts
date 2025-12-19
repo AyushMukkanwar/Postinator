@@ -1,12 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import {
-  IsBoolean,
-  IsEnum,
-  IsNumber,
-  IsOptional,
-  IsString,
-} from 'class-validator';
 import { Platform, TokenType } from '@repo/database';
+import { IsBoolean, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class CreateSocialAccountDto {
   @ApiProperty({
@@ -91,6 +85,14 @@ export class CreateSocialAccountDto {
   })
   @IsOptional()
   expiresAt?: Date;
+
+  @ApiProperty({
+    description: 'Refresh token expiration date (for OAuth2)',
+    required: false,
+    example: '2024-08-01T00:00:00.000Z',
+  })
+  @IsOptional()
+  refreshTokenExpiresAt?: Date;
 
   @ApiProperty({
     description: 'Token expiration in seconds from now (for OAuth2)',

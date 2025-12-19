@@ -7,7 +7,7 @@ import {
   authenticatedDelete,
   getCurrentUserId,
 } from '@/lib/auth/auth-fetch';
-import { SocialAccount, Platform } from '@/types/socialAccount';
+import { SocialAccount, Platform } from '@repo/database';
 
 export const upsertSocialAccount = async (socialAccount: {
   platform: Platform;
