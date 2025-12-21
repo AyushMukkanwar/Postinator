@@ -1,7 +1,7 @@
 import { Platform } from './generated/client';
 
+export * from './constants';
 export * from './generated/client';
-// Named exports are handled by export * above, avoiding duplicate export errors
 
 export const Platforms = [Platform.TWITTER, Platform.LINKEDIN] as const;
 

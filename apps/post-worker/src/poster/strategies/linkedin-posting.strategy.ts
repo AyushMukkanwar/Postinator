@@ -20,6 +20,11 @@ export class LinkedInPostingStrategy implements IPostingStrategy {
 
     if (!platformId) throw new Error('Missing Platform ID (URN)');
 
+    // Ensure platformId is a URN. OpenID 'sub' is usually just the ID.
+    const authorUrn = platformId.startsWith('urn:')
+      ? platformId
+      : `urn:li:person:${platformId}`;
+
     // Prepare Media
     let assetUrn: string | undefined;
 
@@ -28,7 +33,7 @@ export class LinkedInPostingStrategy implements IPostingStrategy {
         // Register
         const { asset, uploadUrl } = await this.registerUpload(
           accessToken,
-          platformId,
+          authorUrn,
         );
 
         assetUrn = asset;
@@ -41,7 +46,7 @@ export class LinkedInPostingStrategy implements IPostingStrategy {
     }
 
     // Post
-    return this.createPost(accessToken, platformId, content, assetUrn);
+    return this.createPost(accessToken, authorUrn, content, assetUrn);
   }
 
   private async registerUpload(

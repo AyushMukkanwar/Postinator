@@ -1,15 +1,15 @@
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import {
+  BadRequestException,
   Inject,
   Injectable,
   NotFoundException,
-  BadRequestException,
 } from '@nestjs/common';
+import { Platform, PlatformLimits, Post, PostStatus } from '@repo/database';
+import { Cache } from 'cache-manager';
 import { PostRepository } from 'src/database/repositories/post.repository';
 import { SocialAccountRepository } from 'src/database/repositories/social-account.repository';
-import { Post, PostStatus, Platform } from '@repo/database';
 import { PostQueueService } from '../queue/post-queue.service';
-import { Cache } from 'cache-manager';
 
 @Injectable()
 export class PostService {
@@ -26,13 +26,8 @@ export class PostService {
     content: string;
     scheduledFor: Date;
     platform: Platform;
+    media?: string[];
   }): Promise<Post> {
-    // Validate content length for Twitter
-    if (data.platform === Platform.TWITTER && data.content.length > 280) {
-      throw new BadRequestException(
-        'Post content exceeds the 280 character limit for Twitter.'
-      );
-    }
     // Validate social account belongs to user and is active
     const socialAccount = await this.socialAccountRepository.findById(
       data.socialAccountId
@@ -49,12 +44,21 @@ export class PostService {
       throw new BadRequestException('Platform mismatch with social account');
     }
 
+    // Validate Content Limits using Shared Config
+    const limits = PlatformLimits[socialAccount.platform];
+    if (data.content.length > limits.maxTextLength) {
+      throw new BadRequestException(
+        `Post content exceeds the ${limits.maxTextLength} character limit for ${socialAccount.platform}.`
+      );
+    }
+
     const post = await this.postRepository.create({
       content: data.content,
       scheduledFor: data.scheduledFor,
       platform: data.platform,
       user: { connect: { id: data.userId } },
       socialAccount: { connect: { id: data.socialAccountId } },
+      media: data.media || [],
     });
 
     await this.postQueueService.addPostToQueue(post.id, post.scheduledFor);
@@ -71,6 +75,7 @@ export class PostService {
       scheduledFor: Date;
       socialAccountId: string;
       platform: Platform;
+      media?: string[];
     }
   ): Promise<Post> {
     return this.schedulePost({
@@ -79,6 +84,7 @@ export class PostService {
       scheduledFor: createPostDto.scheduledFor,
       socialAccountId: createPostDto.socialAccountId,
       platform: createPostDto.platform,
+      media: createPostDto.media,
     });
   }
 

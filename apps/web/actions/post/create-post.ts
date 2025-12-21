@@ -8,6 +8,7 @@ interface PostData {
   scheduledFor: string;
   platform: Platform;
   socialAccountId: string;
+  media?: string[];
 }
 
 export async function createPost(postData: PostData) {
@@ -17,6 +18,7 @@ export async function createPost(postData: PostData) {
       scheduledFor: postData.scheduledFor,
       platform: postData.platform,
       socialAccountId: postData.socialAccountId,
+      media: postData.media,
     });
 
     if (!response.ok) {
