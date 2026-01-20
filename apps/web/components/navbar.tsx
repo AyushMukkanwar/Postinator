@@ -1,9 +1,9 @@
 'use client';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { Menu } from 'lucide-react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 import { useUserStore } from '@/store/userStore';
 
@@ -117,6 +117,13 @@ export function NavBar({ onMenuClick }: NavBarProps) {
           </div>
 
           <div className="flex items-center space-x-4 ml-auto">
+            <Button
+              asChild
+              variant="outline"
+              className="hidden sm:flex border-orange-500 text-orange-500 hover:bg-orange-50"
+            >
+              <Link href="/pricing">Upgrade to Pro</Link>
+            </Button>
             <Button
               variant="ghost"
               size="icon"

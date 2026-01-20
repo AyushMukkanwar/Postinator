@@ -1,16 +1,17 @@
 import {
-  Controller,
-  Post as PostMapping,
   Body,
-  UseGuards,
-  Req,
+  Controller,
   Get,
+  Post as PostMapping,
   Query,
+  Req,
+  UseGuards,
 } from '@nestjs/common';
-import { PostService } from './post.service';
-import { CreatePostDto } from './dto/create-post.dto';
 import { AuthGuard } from '@nestjs/passport';
-import { Post } from '@repo/database';
+import { ApiOkResponse } from '@nestjs/swagger';
+import { CreatePostDto } from './dto/create-post.dto';
+import { PostEntity } from './entities/post.entity';
+import { PostService } from './post.service';
 
 @Controller('post')
 export class PostController {
@@ -18,10 +19,11 @@ export class PostController {
 
   @UseGuards(AuthGuard('jwt'))
   @PostMapping()
+  @ApiOkResponse({ type: PostEntity })
   async create(
     @Body() createPostDto: CreatePostDto,
     @Req() req
-  ): Promise<Post> {
+  ): Promise<PostEntity> {
     const userId = req.user.id;
     const result = await this.postService.create(userId, createPostDto);
     return result;
@@ -29,10 +31,11 @@ export class PostController {
 
   @UseGuards(AuthGuard('jwt'))
   @Get()
+  @ApiOkResponse({ type: [PostEntity] })
   async getPostsByStatus(
     @Req() req,
     @Query('status') status: string
-  ): Promise<Post[]> {
+  ): Promise<PostEntity[]> {
     const userId = req.user.id;
     return this.postService.getPostsByStatus(userId, status);
   }

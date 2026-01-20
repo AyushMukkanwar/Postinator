@@ -5,10 +5,17 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Platform, PlatformLimits, Post, PostStatus } from '@repo/database';
+import {
+  Platform,
+  PlatformLimits,
+  Post,
+  PostStatus,
+  SUBSCRIPTION_PLANS,
+} from '@repo/database';
 import { Cache } from 'cache-manager';
 import { PostRepository } from 'src/database/repositories/post.repository';
 import { SocialAccountRepository } from 'src/database/repositories/social-account.repository';
+import { UserRepository } from 'src/database/repositories/user.repository';
 import { PostQueueService } from '../queue/post-queue.service';
 
 @Injectable()
@@ -17,6 +24,7 @@ export class PostService {
     private postRepository: PostRepository,
     private socialAccountRepository: SocialAccountRepository,
     private postQueueService: PostQueueService,
+    private userRepository: UserRepository,
     @Inject(CACHE_MANAGER) private cacheManager: Cache
   ) {}
 
@@ -44,6 +52,32 @@ export class PostService {
       throw new BadRequestException('Platform mismatch with social account');
     }
 
+    const user = await this.userRepository.findById(data.userId);
+
+    const monthAgo = new Date();
+    monthAgo.setDate(monthAgo.getDate() - 30);
+
+    let currentCount = user.postCountCurrentPeriod;
+    let periodStart = user.currentPeriodStart;
+
+    // Reset limit if more than a month is passed
+    if (periodStart < monthAgo) {
+      currentCount = 0;
+      periodStart = new Date();
+      await this.userRepository.update(user.id, {
+        postCountCurrentPeriod: 0,
+        currentPeriodStart: periodStart,
+      });
+    }
+
+    const plan = SUBSCRIPTION_PLANS[user.subscriptionTier];
+    const maxPosts = plan.limits.maxPostsPerMonth;
+    if (currentCount >= maxPosts) {
+      throw new BadRequestException(
+        `Monthly post limit reached for ${plan.name} tier. Upgrade to PRO for unlimited posting!`
+      );
+    }
+
     // Validate Content Limits using Shared Config
     const limits = PlatformLimits[socialAccount.platform];
     if (data.content.length > limits.maxTextLength) {
@@ -65,7 +99,15 @@ export class PostService {
 
     await this.invalidateUserPostsCache(data.userId);
 
+    await this.userRepository.update(user.id, {
+      postCountCurrentPeriod: currentCount + 1,
+    });
+
     return post;
+
+    // return await this.prismaService.$transaction(async (tx) => {
+
+    // })
   }
 
   async create(

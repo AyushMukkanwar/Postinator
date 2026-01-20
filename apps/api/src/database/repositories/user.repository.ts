@@ -1,7 +1,7 @@
 // src/database/repositories/user.repository.ts
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma, User } from '@repo/database';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { User, Prisma } from '@repo/database';
 import { BaseRepository } from './base.repository';
 
 export interface IUserRepository
@@ -17,7 +17,14 @@ export interface IUserRepository
   findWithSocialAccounts(id: string): Promise<User | null>;
   findByEmailWithSocialAccounts(email: string): Promise<User | null>;
   findWithRecentPosts(id: string, limit?: number): Promise<User | null>;
+  update(
+    id: string,
+    data: Prisma.UserUpdateInput,
+    tx?: PrismaClientOrTx
+  ): Promise<User>;
 }
+
+type PrismaClientOrTx = Prisma.TransactionClient | PrismaService;
 
 @Injectable()
 export class UserRepository implements IUserRepository {
@@ -114,8 +121,13 @@ export class UserRepository implements IUserRepository {
     return await this.prisma.user.findMany({ skip, take, where, orderBy });
   }
 
-  async update(id: string, data: Prisma.UserUpdateInput): Promise<User> {
-    return await this.prisma.user.update({ where: { id }, data });
+  async update(
+    id: string,
+    data: Prisma.UserUpdateInput,
+    tx?: PrismaClientOrTx
+  ): Promise<User> {
+    const client = tx || this.prisma;
+    return await client.user.update({ where: { id }, data });
   }
 
   async delete(id: string): Promise<User> {

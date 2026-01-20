@@ -1,11 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { SocialAccountController } from './social-account.controller';
-import { SocialAccountService } from './social-account.service';
+import { TokenType } from '@repo/database';
+import { ResourceOwnerGuard } from '../auth/guards/resource-owner.guard';
+import { LinkedinService } from '../linkedin/linkedin.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { TwitterService } from '../twitter/twitter.service';
 import { TwitterAccessTokenDto } from './dto/twitter-access-token.dto';
-import { TokenType } from '@repo/database';
-import { PrismaService } from '../prisma/prisma.service';
-import { ResourceOwnerGuard } from '../auth/guards/resource-owner.guard';
+import { SocialAccountController } from './social-account.controller';
+import { SocialAccountService } from './social-account.service';
 
 describe('SocialAccountController', () => {
   let controller: SocialAccountController;
@@ -21,6 +22,11 @@ describe('SocialAccountController', () => {
     login: jest.fn(),
   };
 
+  const mockLinkedinService = {
+    getAuthorizationUrl: jest.fn(),
+    login: jest.fn(),
+  };
+
   const mockPrismaService = {};
 
   beforeEach(async () => {
@@ -29,6 +35,7 @@ describe('SocialAccountController', () => {
       providers: [
         { provide: SocialAccountService, useValue: mockSocialAccountService },
         { provide: TwitterService, useValue: mockTwitterService },
+        { provide: LinkedinService, useValue: mockLinkedinService },
         { provide: PrismaService, useValue: mockPrismaService },
       ],
     })
@@ -106,6 +113,7 @@ describe('SocialAccountController', () => {
           username: 'twitteruser',
           avatar: 'http://image.url',
           tokenType: TokenType.OAUTH2,
+          isActive: true,
         },
         'user-1'
       );

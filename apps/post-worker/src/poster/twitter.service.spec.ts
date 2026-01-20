@@ -1,7 +1,7 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { TwitterService } from './twitter.service';
 import { ConfigService } from '@nestjs/config';
+import { Test, TestingModule } from '@nestjs/testing';
 import { TwitterApi } from 'twitter-api-v2';
+import { TwitterService } from './twitter.service';
 
 jest.mock('twitter-api-v2');
 
@@ -37,8 +37,13 @@ describe('TwitterService', () => {
   describe('postTweet', () => {
     it('should post a tweet successfully with valid tokens', async () => {
       const mockTweet = jest.fn().mockResolvedValue({ data: { id: '123' } });
+      const mockUploadMedia = jest.fn().mockResolvedValue('media-id');
+
       (TwitterApi as unknown as jest.Mock).mockImplementation(() => ({
-        v2: { tweet: mockTweet },
+        v2: {
+          tweet: mockTweet,
+          uploadMedia: mockUploadMedia,
+        },
       }));
 
       const result = await service.postTweet(
@@ -50,7 +55,10 @@ describe('TwitterService', () => {
       );
 
       expect(result).toEqual({ tweetId: '123' });
-      expect(mockTweet).toHaveBeenCalledWith('Hello World');
+      expect(mockTweet).toHaveBeenCalledWith({
+        text: 'Hello World',
+        media: { media_ids: ['media-id'] },
+      });
     });
 
     it('should refresh token if expired', async () => {
@@ -60,12 +68,18 @@ describe('TwitterService', () => {
         expiresIn: 3600,
       });
       const mockTweet = jest.fn().mockResolvedValue({ data: { id: '123' } });
+      const mockUploadMedia = jest.fn().mockResolvedValue('media-id');
 
       (TwitterApi as unknown as jest.Mock).mockImplementation((token) => {
         if (typeof token === 'object') {
           return { refreshOAuth2Token: mockRefresh };
         }
-        return { v2: { tweet: mockTweet } };
+        return {
+          v2: {
+            tweet: mockTweet,
+            uploadMedia: mockUploadMedia,
+          },
+        };
       });
 
       const updateTokens = jest.fn();
@@ -97,12 +111,18 @@ describe('TwitterService', () => {
         .fn()
         .mockRejectedValueOnce({ code: 401 }) // First call fails
         .mockResolvedValueOnce({ data: { id: '123' } }); // Retry succeeds
+      const mockUploadMedia = jest.fn().mockResolvedValue('media-id');
 
       (TwitterApi as unknown as jest.Mock).mockImplementation((token) => {
         if (typeof token === 'object') {
           return { refreshOAuth2Token: mockRefresh };
         }
-        return { v2: { tweet: mockTweet } };
+        return {
+          v2: {
+            tweet: mockTweet,
+            uploadMedia: mockUploadMedia,
+          },
+        };
       });
 
       const updateTokens = jest.fn();

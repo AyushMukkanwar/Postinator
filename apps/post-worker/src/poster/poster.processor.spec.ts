@@ -1,14 +1,16 @@
+import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
-import { PosterProcessor } from './poster.processor';
-import { PrismaService } from '../prisma/prisma.service';
-import { TwitterService } from './twitter.service';
-import { EncryptionService } from '../encryption/encryption.service';
 import { Job } from 'bullmq';
+import { TwitterApi } from 'twitter-api-v2';
+import { EncryptionService } from '../encryption/encryption.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { PosterProcessor } from './poster.processor';
+
+jest.mock('twitter-api-v2');
 
 describe('PosterProcessor', () => {
   let processor: PosterProcessor;
   let prismaService: PrismaService;
-  let twitterService: TwitterService;
   let encryptionService: EncryptionService;
 
   const mockPrismaService = {
@@ -21,28 +23,43 @@ describe('PosterProcessor', () => {
     },
   };
 
-  const mockTwitterService = {
-    postTweet: jest.fn(),
-  };
-
   const mockEncryptionService = {
     decrypt: jest.fn((val) => `decrypted-${val}`),
     encrypt: jest.fn((val) => `encrypted-${val}`),
   };
 
+  const mockTwitterApi = {
+    v2: {
+      tweet: jest.fn().mockResolvedValue({ data: { id: 'tweet-1' } }),
+    },
+    refreshOAuth2Token: jest.fn(),
+  };
+
   beforeEach(async () => {
+    (TwitterApi as unknown as jest.Mock).mockImplementation(
+      () => mockTwitterApi,
+    );
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         PosterProcessor,
         { provide: PrismaService, useValue: mockPrismaService },
-        { provide: TwitterService, useValue: mockTwitterService },
         { provide: EncryptionService, useValue: mockEncryptionService },
+        {
+          provide: ConfigService,
+          useValue: {
+            get: jest.fn((key: string) => {
+              if (key === 'TWITTER_CLIENT_ID') return 'mock-client-id';
+              if (key === 'TWITTER_CLIENT_SECRET') return 'mock-client-secret';
+              return null;
+            }),
+          },
+        },
       ],
     }).compile();
 
     processor = module.get<PosterProcessor>(PosterProcessor);
     prismaService = module.get<PrismaService>(PrismaService);
-    twitterService = module.get<TwitterService>(TwitterService);
     encryptionService = module.get<EncryptionService>(EncryptionService);
     jest.clearAllMocks();
   });
@@ -63,26 +80,23 @@ describe('PosterProcessor', () => {
           platform: 'TWITTER',
           accessToken: 'enc-access',
           refreshToken: 'enc-refresh',
-          expiresAt: new Date(),
+          expiresAt: new Date(Date.now() + 1000 * 60 * 60), // Future
+          id: 'account-1',
         },
       };
 
       mockPrismaService.post.findUnique.mockResolvedValue(mockPost);
-      mockTwitterService.postTweet.mockResolvedValue({ tweetId: 'tweet-1' });
 
       await processor.process(job);
 
       expect(mockEncryptionService.decrypt).toHaveBeenCalledWith('enc-access');
       expect(mockEncryptionService.decrypt).toHaveBeenCalledWith('enc-refresh');
-      expect(mockTwitterService.postTweet).toHaveBeenCalledWith(
-        'decrypted-enc-access',
-        'decrypted-enc-refresh',
-        mockPost.socialAccount.expiresAt,
-        'Hello World',
-        expect.any(Function),
-      );
+      // The strategy calls client.v2.tweet
+      expect(mockTwitterApi.v2.tweet).toHaveBeenCalledWith('Hello World');
+
       expect(mockPrismaService.post.update).toHaveBeenCalledWith({
         where: { id: 'post-1' },
+        // The strategy returns { postId: tweetData.id } which is 'tweet-1' from our mock
         data: { status: 'PUBLISHED', platformPostId: 'tweet-1' },
       });
     });
@@ -102,15 +116,33 @@ describe('PosterProcessor', () => {
         },
       };
 
-      mockPrismaService.post.findUnique.mockResolvedValue(mockPost);
-      mockTwitterService.postTweet.mockImplementation(
-        async (at, rt, exp, text, callback) => {
-          await callback('new-access', 'new-refresh', new Date());
-          return { tweetId: 'tweet-1' };
+      const mockPost2 = {
+        id: 'post-1',
+        content: 'Hello World',
+        status: 'SCHEDULED',
+        socialAccountId: 'account-1',
+        socialAccount: {
+          platform: 'TWITTER',
+          accessToken: 'enc-access',
+          refreshToken: 'enc-refresh',
+          expiresAt: new Date(Date.now() - 10000), // Expired
+          id: 'account-1',
         },
-      );
+      };
+
+      mockPrismaService.post.findUnique.mockResolvedValue(mockPost2);
+
+      mockTwitterApi.refreshOAuth2Token.mockResolvedValue({
+        accessToken: 'new-access',
+        refreshToken: 'new-refresh',
+        expiresIn: 3600,
+      });
 
       await processor.process(job);
+
+      expect(mockTwitterApi.refreshOAuth2Token).toHaveBeenCalledWith(
+        'decrypted-enc-refresh',
+      );
 
       expect(mockEncryptionService.encrypt).toHaveBeenCalledWith('new-access');
       expect(mockEncryptionService.encrypt).toHaveBeenCalledWith('new-refresh');

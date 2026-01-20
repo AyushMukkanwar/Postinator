@@ -110,6 +110,9 @@ services:
       # IMPORTANT: Preserve container's node_modules
       - /app/node_modules
       - /app/apps/web/node_modules
+      # Mount database package for dev
+      - ./packages/database:/app/packages/database
+      - /app/packages/database/node_modules
     env_file:
       - apps/web/.env
     environment:

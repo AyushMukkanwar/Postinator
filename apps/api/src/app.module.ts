@@ -1,18 +1,19 @@
+import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
-import { UserModule } from './user/user.module';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
-import { APP_GUARD } from '@nestjs/core';
-import { SocialAccountModule } from './social-account/social-account.module';
-import { EncryptionModule } from './encryption/encryption.module';
-import { BullModule } from '@nestjs/bullmq';
 import { AppCacheModule } from './cache/cache.module';
+import { EncryptionModule } from './encryption/encryption.module';
 import { HealthModule } from './health/health.module';
+import { PaymentModule } from './payment/payment.module';
 import { PostQueueModule } from './queue/post-queue.module';
+import { SocialAccountModule } from './social-account/social-account.module';
 import { TwitterModule } from './twitter/twitter.module';
+import { UserModule } from './user/user.module';
 
 @Module({
   imports: [
@@ -63,6 +64,7 @@ import { TwitterModule } from './twitter/twitter.module';
     AppCacheModule,
     HealthModule,
     TwitterModule,
+    PaymentModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],
