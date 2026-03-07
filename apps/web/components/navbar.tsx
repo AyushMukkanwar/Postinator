@@ -1,7 +1,9 @@
 'use client';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Menu } from 'lucide-react';
+import { SubscriptionTier } from '@repo/database';
+import { Menu, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -24,6 +26,7 @@ export function NavBar({ onMenuClick }: NavBarProps) {
   const isHomePage = pathname === '/';
 
   const isUserLoggedIn = !!email; // Check if user exists by email
+  const isPro = user?.subscriptionTier === SubscriptionTier.PRO;
 
   // Home page navbar - simplified version
   if (isHomePage) {
@@ -117,13 +120,23 @@ export function NavBar({ onMenuClick }: NavBarProps) {
           </div>
 
           <div className="flex items-center space-x-4 ml-auto">
-            <Button
-              asChild
-              variant="outline"
-              className="hidden sm:flex border-orange-500 text-orange-500 hover:bg-orange-50"
-            >
-              <Link href="/pricing">Upgrade to Pro</Link>
-            </Button>
+            {isPro ? (
+              <Badge
+                variant="outline"
+                className="hidden sm:flex border-blue-500 bg-blue-500/10 text-blue-500 font-bold px-3 py-1 items-center gap-1.5"
+              >
+                <Sparkles className="h-3.5 w-3.5 fill-blue-500" />
+                PRO
+              </Badge>
+            ) : (
+              <Button
+                asChild
+                variant="outline"
+                className="hidden sm:flex border-orange-500 text-orange-500 hover:bg-orange-50"
+              >
+                <Link href="/pricing">Upgrade to Pro</Link>
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="icon"

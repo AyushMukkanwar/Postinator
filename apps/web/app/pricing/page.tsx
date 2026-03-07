@@ -1,6 +1,7 @@
 'use client';
 
 import { createRazorpayOrder, verifyRazorpayPayment } from '@/actions/payment';
+import { getUser } from '@/actions/user';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -12,8 +13,9 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { useUserStore } from '@/store/userStore';
 import { SUBSCRIPTION_PLANS, SubscriptionTier } from '@repo/database';
-import { Check, Loader2 } from 'lucide-react';
+import { Check, Loader2, Sparkles } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -28,6 +30,10 @@ declare global {
 export default function PricingPage() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const user = useUserStore((state) => state.user);
+  const setUser = useUserStore((state) => state.setUser);
+
+  const isPro = user?.subscriptionTier === SubscriptionTier.PRO;
 
   const handleUpgrade = async () => {
     setIsLoading(true);
@@ -61,6 +67,12 @@ export default function PricingPage() {
             toast.error('Payment Verification Failed');
             console.error(verifyError);
           } else {
+            // Refetch user data to update Zustand store with new Pro tier
+            const updatedUser = await getUser();
+            if (updatedUser) {
+              setUser(updatedUser);
+            }
+
             toast.success('Upgrade Successful! Welcome to Pro.');
             // Refresh server data to reflect new plan
             router.refresh();
@@ -185,20 +197,30 @@ export default function PricingPage() {
             </ul>
           </CardContent>
           <CardFooter>
-            <Button
-              className="w-full bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-white font-bold h-12 text-lg shadow-lg"
-              onClick={handleUpgrade}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Processing...
-                </>
-              ) : (
-                proPlan.cta
-              )}
-            </Button>
+            {isPro ? (
+              <Button
+                className="w-full bg-gradient-to-r from-blue-400 to-blue-600 hover:from-blue-500 hover:to-blue-700 text-white font-bold h-12 text-lg shadow-lg cursor-default"
+                disabled
+              >
+                <Sparkles className="mr-2 h-5 w-5" />
+                Pro Active
+              </Button>
+            ) : (
+              <Button
+                className="w-full bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-white font-bold h-12 text-lg shadow-lg"
+                onClick={handleUpgrade}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  proPlan.cta
+                )}
+              </Button>
+            )}
           </CardFooter>
         </Card>
       </div>

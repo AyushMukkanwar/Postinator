@@ -269,7 +269,7 @@ export function CreatePostForm() {
           </div>
 
           {/* Media Upload Area */}
-          {currentLimits && (
+          {currentLimits && selectedAccount?.platform !== 'TWITTER' && (
             <div className="space-y-2">
               <Label className="text-base font-medium">
                 Media ({mediaFiles.length}/{currentLimits.maxMediaCount})
