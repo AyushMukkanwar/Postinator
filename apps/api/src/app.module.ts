@@ -38,12 +38,21 @@ import { UserModule } from './user/user.module';
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => {
         const redisUrl = configService.get<string>('REDIS_URL');
+
+        const tlsConfig =
+          configService.get<string>('NODE_ENV') === 'production'
+            ? {}
+            : undefined;
+
         if (redisUrl) {
           const url = new URL(redisUrl);
           return {
             connection: {
               host: url.hostname,
               port: Number(url.port),
+              password:
+                url.password || configService.get<string>('REDIS_PASSWORD'),
+              tls: tlsConfig,
             },
           };
         }
@@ -51,6 +60,8 @@ import { UserModule } from './user/user.module';
           connection: {
             host: configService.get<string>('REDIS_HOST'),
             port: configService.get<number>('REDIS_PORT'),
+            password: configService.get<string>('REDIS_PASSWORD'),
+            tls: tlsConfig,
           },
         };
       },
