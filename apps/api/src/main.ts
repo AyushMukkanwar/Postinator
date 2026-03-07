@@ -12,17 +12,27 @@ import { HttpExceptionFilter } from './filters/http-exception.filter';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.use(cookieParser());
-  app.enableCors({
-    origin: [
-      'http://localhost:3000',
-      'https://app.localhost:3000',
-      'http://localhost:3001',
-      'https://app.localhost:3001',
-    ],
-    credentials: true,
-  });
+
   const configService = app.get(ConfigService);
   const port = configService.get<number>('PORT') || 3001; // Default to 3001 if not in .env
+
+  // Build allowed CORS origins: always include localhost for local dev,
+  // and add the production WEB_URL from environment variables if set.
+  const webUrl = configService.get<string>('WEB_URL');
+  const allowedOrigins = [
+    'http://localhost:3000',
+    'https://app.localhost:3000',
+    'http://localhost:3001',
+    'https://app.localhost:3001',
+  ];
+  if (webUrl) {
+    allowedOrigins.push(webUrl);
+  }
+
+  app.enableCors({
+    origin: allowedOrigins,
+    credentials: true,
+  });
 
   app.useGlobalPipes(
     new ValidationPipe({
