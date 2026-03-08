@@ -30,9 +30,15 @@ COPY packages/database ./packages/database
 # Generate Prisma client and build database package
 RUN pnpm --filter @repo/database db:generate && pnpm --filter @repo/database build
 
-# Copy the rest of the source code
-COPY . .
+# Copy the post-worker source code
+COPY apps/post-worker/src ./apps/post-worker/src
+COPY apps/post-worker/tsconfig.json ./apps/post-worker/
+COPY apps/post-worker/tsconfig.build.json ./apps/post-worker/
+COPY apps/post-worker/nest-cli.json ./apps/post-worker/
+COPY tsconfig.json ./
 
-# The command in docker-compose.yml will override this,
-# but this is a good default for running the container directly.
-CMD ["pnpm", "dev", "--filter=post-worker"]
+# Build the post-worker
+RUN pnpm --filter post-worker build
+
+# Start the post-worker in production mode
+CMD ["node", "apps/post-worker/dist/main.js"]

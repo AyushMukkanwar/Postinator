@@ -22,6 +22,7 @@ import { PrismaModule } from './prisma/prisma.module';
             configService.get<string>('NODE_ENV') === 'production'
               ? {}
               : undefined,
+          maxRetriesPerRequest: null,
         },
       }),
       inject: [ConfigService],
