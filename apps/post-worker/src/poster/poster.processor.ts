@@ -24,7 +24,7 @@ export class PosterProcessor extends WorkerHost implements OnModuleDestroy {
 
     this.strategies = new Map<Platform, IPostingStrategy>([
       [Platform.TWITTER, new TwitterPostingStrategy(this.configService)],
-      [Platform.LINKEDIN, new LinkedInPostingStrategy()],
+      [Platform.LINKEDIN, new LinkedInPostingStrategy(this.configService)],
     ]);
   }
 

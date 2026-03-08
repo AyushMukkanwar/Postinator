@@ -1,9 +1,12 @@
 import { Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { SocialAccount } from '@repo/database';
 import { IPostingStrategy } from '../interfaces/posting-strategy.interface';
 
 export class LinkedInPostingStrategy implements IPostingStrategy {
   private readonly logger = new Logger(LinkedInPostingStrategy.name);
+
+  constructor(private readonly configService: ConfigService) {}
 
   async post(
     account: SocialAccount,
@@ -15,8 +18,65 @@ export class LinkedInPostingStrategy implements IPostingStrategy {
       expiresAt: Date,
     ) => Promise<void>,
   ): Promise<{ postId: string }> {
-    // TODO: implement
-    const { accessToken, platformId } = account;
+    let currentAccessToken = account.accessToken;
+    const isExpired =
+      account.expiresAt &&
+      new Date(account.expiresAt.getTime() - 5 * 60 * 1000) < new Date();
+
+    if (isExpired && account.refreshToken) {
+      this.logger.log('LinkedIn token expired, refreshing...');
+      try {
+        const clientId = this.configService.get<string>('LINKEDIN_CLIENT_ID');
+        const clientSecret = this.configService.get<string>(
+          'LINKEDIN_CLIENT_SECRET',
+        );
+
+        if (!clientId || !clientSecret) {
+          throw new Error('Missing LinkedIn Client ID or Secret for refresh');
+        }
+
+        const params = new URLSearchParams();
+        params.append('grant_type', 'refresh_token');
+        params.append('refresh_token', account.refreshToken);
+        params.append('client_id', clientId);
+        params.append('client_secret', clientSecret);
+
+        const refreshResponse = await fetch(
+          'https://www.linkedin.com/oauth/v2/accessToken',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: params.toString(),
+          },
+        );
+
+        if (!refreshResponse.ok) {
+          throw new Error(
+            `Failed to refresh token: ${await refreshResponse.text()}`,
+          );
+        }
+
+        const data = await refreshResponse.json();
+        currentAccessToken = data.access_token;
+        const newExpiresIn = data.expires_in;
+        const newRefreshToken = data.refresh_token || account.refreshToken;
+        const newExpiresAt = new Date(Date.now() + newExpiresIn * 1000);
+
+        await updateTokensCallback(
+          currentAccessToken,
+          newRefreshToken,
+          newExpiresAt,
+        );
+        this.logger.log('LinkedIn token refreshed successfully.');
+      } catch (error) {
+        this.logger.error('Failed to refresh LinkedIn token', error);
+        throw error;
+      }
+    }
+
+    const { platformId } = account;
 
     if (!platformId) throw new Error('Missing Platform ID (URN)');
 
@@ -32,21 +92,21 @@ export class LinkedInPostingStrategy implements IPostingStrategy {
       try {
         // Register
         const { asset, uploadUrl } = await this.registerUpload(
-          accessToken,
+          currentAccessToken,
           authorUrn,
         );
 
         assetUrn = asset;
 
         // Upload
-        await this.uploadImage(accessToken, uploadUrl, mediaUrls[0]);
+        await this.uploadImage(currentAccessToken, uploadUrl, mediaUrls[0]);
       } catch (error) {
         this.logger.error('Media upload failed, posting text only', error);
       }
     }
 
     // Post
-    return this.createPost(accessToken, authorUrn, content, assetUrn);
+    return this.createPost(currentAccessToken, authorUrn, content, assetUrn);
   }
 
   private async registerUpload(
