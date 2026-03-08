@@ -41,6 +41,20 @@ import { UserModule } from './user/user.module';
         const isProduction =
           configService.get<string>('NODE_ENV') === 'production';
 
+        if (isProduction && configService.get<string>('REDIS_PASSWORD')) {
+          const { Redis } = require('ioredis');
+          const password = configService.get<string>('REDIS_PASSWORD');
+          const host = configService.get<string>('REDIS_HOST');
+          const port = configService.get<number>('REDIS_PORT');
+
+          return {
+            connection: new Redis(
+              `rediss://default:${password}@${host}:${port}`,
+              { maxRetriesPerRequest: null }
+            ),
+          };
+        }
+
         if (redisUrl) {
           const url = new URL(redisUrl);
           return {
@@ -49,7 +63,7 @@ import { UserModule } from './user/user.module';
               port: Number(url.port),
               password:
                 url.password || configService.get<string>('REDIS_PASSWORD'),
-              tls: isProduction ? {} : undefined,
+              tls: undefined,
               maxRetriesPerRequest: null,
             },
           };
@@ -59,7 +73,7 @@ import { UserModule } from './user/user.module';
             host: configService.get<string>('REDIS_HOST'),
             port: configService.get<number>('REDIS_PORT'),
             password: configService.get<string>('REDIS_PASSWORD'),
-            tls: isProduction ? {} : undefined,
+            tls: undefined,
             maxRetriesPerRequest: null,
           },
         };
