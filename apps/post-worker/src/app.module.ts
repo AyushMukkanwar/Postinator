@@ -21,16 +21,19 @@ import { PrismaModule } from './prisma/prisma.module';
         const password = configService.get<string>('REDIS_PASSWORD');
 
         if (isProduction && password) {
-          // Use rediss:// URL for Upstash TLS with ioredis to ensure correct SNI
+          // Use explicit config object with tls options for Upstash SNI
           const { Redis } = require('ioredis');
           return {
-            connection: new Redis(
-              `rediss://default:${password}@${host}:${port}`,
-              {
-                maxRetriesPerRequest: null,
-                keepAlive: 10000,
+            connection: new Redis({
+              host,
+              port,
+              password,
+              tls: {
+                servername: host,
               },
-            ),
+              maxRetriesPerRequest: null,
+              keepAlive: 10000,
+            }),
           };
         }
 

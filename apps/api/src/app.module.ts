@@ -47,11 +47,18 @@ import { UserModule } from './user/user.module';
           const host = configService.get<string>('REDIS_HOST');
           const port = configService.get<number>('REDIS_PORT');
 
+          // Use explicit config object with tls options for Upstash SNI
           return {
-            connection: new Redis(
-              `rediss://default:${password}@${host}:${port}`,
-              { maxRetriesPerRequest: null }
-            ),
+            connection: new Redis({
+              host,
+              port,
+              password,
+              tls: {
+                servername: host,
+              },
+              maxRetriesPerRequest: null,
+              keepAlive: 10000,
+            }),
           };
         }
 
