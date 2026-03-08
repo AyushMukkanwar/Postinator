@@ -26,7 +26,10 @@ import { PrismaModule } from './prisma/prisma.module';
           return {
             connection: new Redis(
               `rediss://default:${password}@${host}:${port}`,
-              { maxRetriesPerRequest: null },
+              {
+                maxRetriesPerRequest: null,
+                keepAlive: 10000,
+              },
             ),
           };
         }

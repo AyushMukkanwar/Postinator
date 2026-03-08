@@ -60,6 +60,8 @@ export class LinkedInPostingStrategy implements IPostingStrategy {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
+          'LinkedIn-Version': '2024-01',
+          'X-Restli-Protocol-Version': '2.0.0',
         },
         body: JSON.stringify({
           registerUploadRequest: {
@@ -112,6 +114,7 @@ export class LinkedInPostingStrategy implements IPostingStrategy {
       headers: {
         Authorization: `Bearer ${token}`, // Sometimes optional, but safest to include
         'Content-Type': 'application/octet-stream',
+        'LinkedIn-Version': '2024-01',
       },
       body: Buffer.from(arrayBuffer),
     });
@@ -158,6 +161,8 @@ export class LinkedInPostingStrategy implements IPostingStrategy {
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
+        'LinkedIn-Version': '2024-01',
+        'X-Restli-Protocol-Version': '2.0.0',
       },
       body: JSON.stringify(postBody),
     });
