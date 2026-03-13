@@ -2,12 +2,8 @@
 
 import type React from 'react';
 
-import { useState } from 'react';
-import { signUpWithEmailAndPassword } from '../actions';
-import Link from 'next/link';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
   Card,
   CardContent,
@@ -16,8 +12,12 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Mail, Lock, AlertCircle, CheckCircle, Shield } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { AlertCircle, CheckCircle, Lock, Mail, Shield } from 'lucide-react';
+import Link from 'next/link';
+import { useState } from 'react';
+import { signUpWithEmailAndPassword } from '../actions';
 
 export default function RegisterPage() {
   const [email, setEmail] = useState('');
@@ -76,13 +76,13 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-background dark:to-background p-4">
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="space-y-1 text-center">
           <CardTitle className="text-2xl font-bold tracking-tight">
             Create your account
           </CardTitle>
-          <CardDescription className="text-slate-600">
+          <CardDescription className="text-slate-600 dark:text-slate-400">
             Enter your details below to create your account
           </CardDescription>
         </CardHeader>
@@ -175,7 +175,7 @@ export default function RegisterPage() {
         </CardContent>
 
         <CardFooter className="flex flex-col space-y-4">
-          <div className="text-center text-sm text-slate-600">
+          <div className="text-center text-sm text-slate-600 dark:text-slate-400">
             Already have an account?{' '}
             <Link
               href="/login"

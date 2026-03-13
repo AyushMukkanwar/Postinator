@@ -2,14 +2,8 @@
 
 import type React from 'react';
 
-import { useState, useEffect } from 'react';
-import { signInWithEmailAndPassword, handleAfterSignIn } from '../actions';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { getSupabaseFrontendClient } from '../../../lib/supabase/client';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
   Card,
   CardContent,
@@ -18,9 +12,15 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { Mail, Lock, AlertCircle } from 'lucide-react';
+import { AlertCircle, Lock, Mail } from 'lucide-react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { getSupabaseFrontendClient } from '../../../lib/supabase/client';
+import { handleAfterSignIn, signInWithEmailAndPassword } from '../actions';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -89,13 +89,13 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-background dark:to-background p-4">
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="space-y-1 text-center">
           <CardTitle className="text-2xl font-bold tracking-tight">
             Welcome back
           </CardTitle>
-          <CardDescription className="text-slate-600">
+          <CardDescription className="text-slate-600 dark:text-slate-400">
             Sign in to your account to continue
           </CardDescription>
         </CardHeader>
@@ -140,7 +140,7 @@ export default function LoginPage() {
               <Separator className="w-full" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-white px-2 text-slate-500">
+              <span className="bg-card px-2 text-slate-500 dark:text-slate-400">
                 Or continue with email
               </span>
             </div>
@@ -190,7 +190,7 @@ export default function LoginPage() {
         </CardContent>
 
         <CardFooter className="flex flex-col space-y-4">
-          <div className="text-center text-sm text-slate-600">
+          <div className="text-center text-sm text-slate-600 dark:text-slate-400">
             Don&apos;t have an account?{' '}
             <Link
               href="/register"
