@@ -9,7 +9,13 @@ import { IPostingStrategy } from './interfaces/posting-strategy.interface';
 import { LinkedInPostingStrategy } from './strategies/linkedin-posting.strategy';
 import { TwitterPostingStrategy } from './strategies/twitter-posting.strategy';
 
-@Processor('post')
+@Processor('post', {
+  concurrency: 5, // Process 5 jobs in parallel (I/O-bound API calls, safe on 1 vCPU Cloud Run)
+  limiter: {
+    max: 20, // Max 20 jobs per minute across the worker
+    duration: 60000, // 60 seconds window — prevents hitting Twitter/LinkedIn API rate limits
+  },
+})
 export class PosterProcessor extends WorkerHost implements OnModuleDestroy {
   private readonly logger = new Logger(PosterProcessor.name);
 

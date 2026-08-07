@@ -24,6 +24,11 @@ export class PostQueueService {
         jobId: postId, // Use postId as jobId for easy lookup/removal
         removeOnComplete: true, // Remove job from queue when completed
         removeOnFail: false, // Keep job in queue on failure for inspection
+        attempts: 3, // Retry up to 3 times on transient failures
+        backoff: {
+          type: 'exponential', // Exponential backoff: 5s → 10s → 20s
+          delay: 5000, // Base delay of 5 seconds
+        },
       }
     );
     this.logger.log(
@@ -58,6 +63,11 @@ export class PostQueueService {
         jobId: postId, // Use postId as jobId for easy lookup/removal
         removeOnComplete: true,
         removeOnFail: false,
+        attempts: 3, // Retry up to 3 times on transient failures
+        backoff: {
+          type: 'exponential', // Exponential backoff: 5s → 10s → 20s
+          delay: 5000, // Base delay of 5 seconds
+        },
       }
     );
     this.logger.log(
